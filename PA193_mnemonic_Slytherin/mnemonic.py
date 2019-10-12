@@ -79,7 +79,7 @@ def __is_valid_seed(seed: bytes) -> bool:
     pass
 
 
-def __secure_seed_compare(expected_seed: bytes, actual_seed: bytes) -> bool:
+def _secure_seed_compare(expected_seed: bytes, actual_seed: bytes) -> bool:
     """Compare provided seeds in constant time to prevent timing attacks.
     :rtype: bool
     :return: True if seeds are the same, False otherwise.
