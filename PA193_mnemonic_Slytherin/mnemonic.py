@@ -9,8 +9,10 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 
 2019
 """
+import hashlib
 import logging
-from typing import Tuple
+import os
+from typing import Dict, List, Tuple
 
 __author__ = 'Team Slytherin: @sobuch, @lsolodkova, @mvondracek.'
 
@@ -38,24 +40,47 @@ def __generate_seed(mnemonic: str, seed_password: str = '') -> bytes:
 # - dictionary is too big (2048 lines OK, but too long words) like hundreds of MB...
 # - every line has exactly 1 word (no whitespaces)
 
-def __entropy2mnemonic(entropy: bytes) -> str:
-    """Convert entropy to mnemonic phrase using dictionary.
+def __get_dictionary() -> Tuple[List[str], Dict[str, int]]:
+    """Load the dictionary.
     Currently uses 1 default dictionary with English words.
     # TODO Should we support multiple dictionaries for various languages?
+    # TODO implement soma checks
+    :rtype: Tuple[List[str], Dict[str, int]]
+    :return: List and dictionary of words
+
+    """
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'english.txt'), 'r') as f:
+        l = f.read().splitlines()
+    d = {l[i]: i for i in range(len(l))}
+    return (l, d)
+
+
+def __entropy2mnemonic(entropy: bytes) -> str:
+    """Convert entropy to mnemonic phrase using dictionary.
     :rtype: str
     :return: Mnemonic phrase
     """
-    pass
+    word_list, _ = __get_dictionary()
+    checksum = hashlib.sha256(entropy).digest()
+    shift = len(entropy) // 4
+    entropy_bin = (int.from_bytes(entropy, byteorder='big') << shift) |\
+                  (int.from_bytes(checksum, byteorder='big') >> 256 - shift)
+    indexes = [(entropy_bin >> i * 11) & 2047 for i in reversed(range(shift * 3))]
+    words = [word_list[i] for i in indexes]
+    return ' '.join(words)
 
 
 def __mnemonic2entropy(mnemonic: str) -> bytes:
     """Convert mnemonic phrase to entropy using dictionary.
-    Currently uses 1 default dictionary with English words.
-    # TODO Should we support multiple dictionaries for various languages?
     :rtype: bytes
-    :return: Entropy
+    :return: Entropy with appended checksum in the last byte
     """
-    pass
+    _, word_dict = __get_dictionary()
+    words = mnemonic.split()
+    l = (len(words))
+    indexes = [word_dict[word] for word in words]
+    entropy_bin = sum([indexes[-i - 1] << i * 11 for i in reversed(range(l))]) << l - (l // 8) * 8
+    return entropy_bin.to_bytes((l * 11 + 7) // 8, byteorder='big')
 
 
 def __is_valid_entropy(entropy: bytes) -> bool:
@@ -72,8 +97,6 @@ def __is_valid_entropy(entropy: bytes) -> bool:
 
 def __is_valid_mnemonic(mnemonic: str) -> bool:
     """Check whether provided string represents a valid mnemonic phrase based on current dictionary.
-    Currently uses 1 default dictionary with English words.
-    # TODO Should we support multiple dictionaries for various languages?
     """
     pass
 
