@@ -87,7 +87,9 @@ def generate(entropy: bytes, seed_password: str = '') -> Tuple[str, bytes]:
     :rtype: Tuple[str, bytes]
     :return: Two item tuple where first is mnemonic phrase and second is seed.
     """
-    pass
+    mnemonic = __entropy2mnemonic(entropy)
+    seed = __generate_seed(mnemonic, seed_password)
+    return mnemonic, seed
 
 
 def recover(mnemonic: str, seed_password: str = '') -> Tuple[bytes, bytes]:
@@ -97,7 +99,12 @@ def recover(mnemonic: str, seed_password: str = '') -> Tuple[bytes, bytes]:
     :rtype: Tuple[bytes, bytes]
     :return: Two item tuple where first is initial entropy and second is seed.
     """
-    pass
+    if not __is_valid_mnemonic(mnemonic):
+        raise ValueError('invalid mnemonic')
+
+    entropy = __mnemonic2entropy(mnemonic)
+    seed = __generate_seed(mnemonic, seed_password)
+    return entropy, seed
 
 
 def verify(mnemonic: str, expected_seed: bytes, seed_password: str = '') -> bool:
@@ -107,7 +114,13 @@ def verify(mnemonic: str, expected_seed: bytes, seed_password: str = '') -> bool
     :rtype: bool
     :return: True if provided phrase generates expected seed, False otherwise.
     """
-    pass
+    if not __is_valid_mnemonic(mnemonic):
+        raise ValueError('invalid mnemonic')
+    if not __is_valid_seed(expected_seed):
+        raise ValueError('invalid expected_seed')
+
+    entropy, generated_seed = recover(mnemonic, seed_password)
+    return _secure_seed_compare(expected_seed, generated_seed)
 
 
 def do_some_work(param: int) -> bool:
