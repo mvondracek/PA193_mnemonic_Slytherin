@@ -100,7 +100,7 @@ def recover(mnemonic: str, seed_password: str = '') -> Tuple[bytes, bytes]:
     pass
 
 
-def verify(mnemonic_phrase: str, expected_seed: bytes, seed_password: str = '') -> bool:
+def verify(mnemonic: str, expected_seed: bytes, seed_password: str = '') -> bool:
     """Verify whether mnemonic phrase matches with expected seed.
     Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
     (empty string) by default.
