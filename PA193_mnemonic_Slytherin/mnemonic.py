@@ -129,7 +129,7 @@ def verify(mnemonic: str, expected_seed: bytes, seed_password: str = '') -> bool
     if not __is_valid_seed(expected_seed):
         raise ValueError('invalid expected_seed')
 
-    entropy, generated_seed = recover(mnemonic, seed_password)
+    generated_seed = __generate_seed(mnemonic, seed_password)
     return _secure_seed_compare(expected_seed, generated_seed)
 
 
