@@ -39,6 +39,7 @@ setup(
     ],
     tests_require=[
         'nose',
+        'pytest',
     ],
     test_suite='nose.collector',
     entry_points={
