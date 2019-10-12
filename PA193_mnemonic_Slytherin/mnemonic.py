@@ -58,6 +58,13 @@ def __mnemonic2entropy(mnemonic: str) -> bytes:
     pass
 
 
+def __is_valid_entropy(entropy: bytes) -> bool:
+    """Check whether provided bytes represent a valid entropy according to BIP39.
+    https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
+    """
+    pass
+
+
 def __is_valid_mnemonic(mnemonic: str) -> bool:
     """Check whether provided string represents a valid mnemonic phrase based on current dictionary.
     Currently uses 1 default dictionary with English words.
@@ -87,6 +94,9 @@ def generate(entropy: bytes, seed_password: str = '') -> Tuple[str, bytes]:
     :rtype: Tuple[str, bytes]
     :return: Two item tuple where first is mnemonic phrase and second is seed.
     """
+    if not __is_valid_entropy(entropy):
+        raise ValueError('invalid entropy')
+
     mnemonic = __entropy2mnemonic(entropy)
     seed = __generate_seed(mnemonic, seed_password)
     return mnemonic, seed
