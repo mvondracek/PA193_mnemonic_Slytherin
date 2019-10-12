@@ -58,6 +58,13 @@ def __mnemonic2entropy(mnemonic: str) -> bytes:
     pass
 
 
+def __is_valid_entropy(entropy: bytes) -> bool:
+    """Check whether provided bytes represent a valid entropy according to BIP39.
+    https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
+    """
+    pass
+
+
 def __is_valid_mnemonic(mnemonic: str) -> bool:
     """Check whether provided string represents a valid mnemonic phrase based on current dictionary.
     Currently uses 1 default dictionary with English words.
@@ -72,7 +79,7 @@ def __is_valid_seed(seed: bytes) -> bool:
     pass
 
 
-def __secure_seed_compare(expected_seed: bytes, actual_seed: bytes) -> bool:
+def _secure_seed_compare(expected_seed: bytes, actual_seed: bytes) -> bool:
     """Compare provided seeds in constant time to prevent timing attacks.
     :rtype: bool
     :return: True if seeds are the same, False otherwise.
@@ -84,30 +91,49 @@ def generate(entropy: bytes, seed_password: str = '') -> Tuple[str, bytes]:
     """Generate mnemonic phrase and seed based on provided entropy.
     Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
     (empty string) by default.
+    :raises ValueError: on invalid parameters
     :rtype: Tuple[str, bytes]
     :return: Two item tuple where first is mnemonic phrase and second is seed.
     """
-    pass
+    if not __is_valid_entropy(entropy):
+        raise ValueError('invalid entropy')
+
+    mnemonic = __entropy2mnemonic(entropy)
+    seed = __generate_seed(mnemonic, seed_password)
+    return mnemonic, seed
 
 
 def recover(mnemonic: str, seed_password: str = '') -> Tuple[bytes, bytes]:
     """ Recover initial entropy and seed from provided mnemonic phrase.
     Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
     (empty string) by default.
+    :raises ValueError: on invalid parameters
     :rtype: Tuple[bytes, bytes]
     :return: Two item tuple where first is initial entropy and second is seed.
     """
-    pass
+    if not __is_valid_mnemonic(mnemonic):
+        raise ValueError('invalid mnemonic')
+
+    entropy = __mnemonic2entropy(mnemonic)
+    seed = __generate_seed(mnemonic, seed_password)
+    return entropy, seed
 
 
-def verify(mnemonic_phrase: str, expected_seed: bytes, seed_password: str = '') -> bool:
+def verify(mnemonic: str, expected_seed: bytes, seed_password: str = '') -> bool:
     """Verify whether mnemonic phrase matches with expected seed.
     Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
     (empty string) by default.
+    :raises ValueError: on invalid parameters
     :rtype: bool
     :return: True if provided phrase generates expected seed, False otherwise.
     """
-    pass
+    if not __is_valid_mnemonic(mnemonic):
+        raise ValueError('invalid mnemonic')
+    if not __is_valid_seed(expected_seed):
+        raise ValueError('invalid expected_seed')
+
+    generated_seed = __generate_seed(mnemonic, seed_password)
+    return _secure_seed_compare(expected_seed, generated_seed)
 
 
 def do_some_work(param: int) -> bool:
