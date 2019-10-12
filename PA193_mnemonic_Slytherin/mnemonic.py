@@ -91,6 +91,7 @@ def generate(entropy: bytes, seed_password: str = '') -> Tuple[str, bytes]:
     """Generate mnemonic phrase and seed based on provided entropy.
     Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
     (empty string) by default.
+    :raises ValueError: on invalid parameters
     :rtype: Tuple[str, bytes]
     :return: Two item tuple where first is mnemonic phrase and second is seed.
     """
@@ -106,6 +107,7 @@ def recover(mnemonic: str, seed_password: str = '') -> Tuple[bytes, bytes]:
     """ Recover initial entropy and seed from provided mnemonic phrase.
     Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
     (empty string) by default.
+    :raises ValueError: on invalid parameters
     :rtype: Tuple[bytes, bytes]
     :return: Two item tuple where first is initial entropy and second is seed.
     """
@@ -121,6 +123,7 @@ def verify(mnemonic: str, expected_seed: bytes, seed_password: str = '') -> bool
     """Verify whether mnemonic phrase matches with expected seed.
     Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
     (empty string) by default.
+    :raises ValueError: on invalid parameters
     :rtype: bool
     :return: True if provided phrase generates expected seed, False otherwise.
     """
