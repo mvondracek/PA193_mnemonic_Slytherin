@@ -33,12 +33,13 @@ setup(
     author=__author__,
 
     python_requires='>=3.5, <4',
-    packages=['BIP39 Mnemonic Phrase Generator and Verifier'],
+    packages=['PA193_mnemonic_Slytherin'],
     install_requires=[
         'coloredlogs',
     ],
     tests_require=[
         'nose',
+        'pytest',
     ],
     test_suite='nose.collector',
     entry_points={
