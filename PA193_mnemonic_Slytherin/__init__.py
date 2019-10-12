@@ -10,3 +10,4 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 2019
 """
 from .mnemonic import do_some_work
+from .mnemonic import generate, recover, verify
