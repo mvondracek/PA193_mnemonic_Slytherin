@@ -86,7 +86,6 @@ def _secure_seed_compare(expected_seed: bytes, actual_seed: bytes) -> bool:
     :rtype: bool
     :return: True if seeds are the same, False otherwise.
     """
-    # TODO: Can we use `hmac` module?
     # > hmac.compare_digest` uses an approach designed to prevent timing
     # > analysis by avoiding content-based short circuiting behaviour, making
     #  > it appropriate for cryptography
