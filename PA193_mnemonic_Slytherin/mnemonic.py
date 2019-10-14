@@ -11,10 +11,14 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 """
 import logging
 from typing import Tuple
+from hashlib import pbkdf2_hmac
 
 __author__ = 'Team Slytherin: @sobuch, @lsolodkova, @mvondracek.'
 
 logger = logging.getLogger(__name__)
+
+PBKDF2_ROUNDS = 2048
+SEED_LEN = 64
 
 
 def __generate_seed(mnemonic: str, seed_password: str = '') -> bytes:
@@ -24,7 +28,14 @@ def __generate_seed(mnemonic: str, seed_password: str = '') -> bytes:
     :rtype: bytes
     :return: Seed
     """
-    pass
+    #who must check the encoding of both inputs? should be UTF-8 NFKD
+    #where should I catch UnicodeError?
+    mnemonic = mnemonic.encode()  #encoding string into bytes, UTF-8 by default
+    #in documentation, input is called a passphrase
+    #and "mnemonic"+passphrase is called a password. Do we need to change the names?
+    passphrase = "mnemonic" + seed_password
+    passphrase = passphrase.encode()
+    return pbkdf2_hmac('sha512', mnemonic, passphrase, PBKDF2_ROUNDS, SEED_LEN)
 
 
 # TODO: functions __entropy2mnemonic, __mnemonic2entropy, __is_valid_mnemonic work with dictionary, we could use single
@@ -76,7 +87,8 @@ def __is_valid_mnemonic(mnemonic: str) -> bool:
 def __is_valid_seed(seed: bytes) -> bool:
     """Check whether provided bytes represent a valid seed.
     """
-    pass
+    if not (type(seed) == bytes) or (len(seed) != SEED_LEN): return False
+    else: return True
 
 
 def _secure_seed_compare(expected_seed: bytes, actual_seed: bytes) -> bool:
