@@ -1,3 +1,14 @@
+"""
+BIP39 Mnemonic Phrase Generator and Verifier
+
+Secure Coding Principles and Practices (PA193)  https://is.muni.cz/course/fi/autumn2019/PA193?lang=en
+Faculty of Informatics (FI)                     https://www.fi.muni.cz/index.html.en
+Masaryk University (MU)                         https://www.muni.cz/en
+
+Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
+
+2019
+"""
 import unittest
 from binascii import unhexlify
 from unittest import TestCase
@@ -5,6 +16,7 @@ from unittest import TestCase
 from PA193_mnemonic_Slytherin.mnemonic import do_some_work
 
 from PA193_mnemonic_Slytherin.mnemonic import generate, recover, verify
+
 
 class TestDoSomeWork(TestCase):
     """Placeholder for initial code structure."""
@@ -193,3 +205,7 @@ class TestMnemonicPublic(TestCase):
     def test_verify(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             self.assertTrue(verify(test_vector[1], unhexlify(test_vector[2]), TREZOR_PASSWORD))
+
+
+if __name__ == '__main__':
+    unittest.main()
