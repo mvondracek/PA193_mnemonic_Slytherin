@@ -171,9 +171,6 @@ def recover(mnemonic: str, seed_password: str = '') -> Tuple[bytes, bytes]:
     :rtype: Tuple[bytes, bytes]
     :return: Two item tuple where first is initial entropy and second is seed.
     """
-    if not __is_valid_mnemonic(mnemonic):
-        raise ValueError('invalid mnemonic')
-
     entropy = __mnemonic2entropy(mnemonic)
     seed = __generate_seed(mnemonic, seed_password)
     return entropy, seed
@@ -187,8 +184,6 @@ def verify(mnemonic: str, expected_seed: bytes, seed_password: str = '') -> bool
     :rtype: bool
     :return: True if provided phrase generates expected seed, False otherwise.
     """
-    if not __is_valid_mnemonic(mnemonic):
-        raise ValueError('invalid mnemonic')
     if not __is_valid_seed(expected_seed):
         raise ValueError('invalid expected_seed')
 
