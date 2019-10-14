@@ -79,6 +79,7 @@ def cli_entry_point():
 
 
 def main(argv) -> ExitCode:
+    # TODO check for errors related to file IO
     logging.captureWarnings(True)
     warnings.simplefilter('always', ResourceWarning)
 
