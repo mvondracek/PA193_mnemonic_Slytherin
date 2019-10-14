@@ -44,13 +44,25 @@ def __get_dictionary() -> Tuple[List[str], Dict[str, int]]:
     """Load the dictionary.
     Currently uses 1 default dictionary with English words.
     # TODO Should we support multiple dictionaries for various languages?
-    # TODO implement soma checks
+    :raises FileNotFoundError: on missing file
+    :raises ValueError: on invalid dictionary
     :rtype: Tuple[List[str], Dict[str, int]]
     :return: List and dictionary of words
 
     """
+    l = []
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'english.txt'), 'r') as f:
-        l = f.read().splitlines()
+        for i in range(2048):
+            l.append(next(f).strip())
+            if len(l[-1]) > 16 or len(l[-1].split()) != 1:
+                raise ValueError('invalid dictionary')
+        try:
+            next(f)
+        except StopIteration:
+            pass
+        else:
+            raise ValueError('invalid dictionary')
+
     d = {l[i]: i for i in range(len(l))}
     return (l, d)
 
