@@ -21,7 +21,7 @@ class TestMain(unittest.TestCase):
     """Integration tests for CLI tool."""
     def setUp(self):
         self.timeout = 5  # seconds until we terminate the program
-        self.cli_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+        self.cli_dir = os.path.dirname(os.path.abspath(__file__))
 
     def assert_argument_error(self, args):
         cli = subprocess.run(args, cwd=self.cli_dir, timeout=self.timeout, shell=True,
