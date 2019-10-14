@@ -36,7 +36,6 @@ setup(
     packages=['PA193_mnemonic_Slytherin'],
     tests_require=[
         'nose',
-        'pytest',
     ],
     test_suite='nose.collector',
     entry_points={
