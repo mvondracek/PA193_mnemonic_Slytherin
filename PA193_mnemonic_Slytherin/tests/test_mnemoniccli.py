@@ -64,6 +64,30 @@ class TestMain(unittest.TestCase):
             self.assert_argument_error(['mnemoniccli', '-v', '-m', f.name, '-s', non_existing_filepath])
             self.assert_argument_error(['mnemoniccli', '-v', '-m', non_existing_filepath, '-s', f.name])
 
+    def test_invalid_entropy(self):
+        """Invalid input file with entropy
+        > The mnemonic must encode entropy in a multiple of 32 bits. With more entropy security is improved but
+        > the sentence length increases. We refer to the initial entropy length as ENT. The allowed size of ENT
+        > is 128-256 bits.
+        > https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
+        """
+        with TemporaryDirectory() as tmpdir:
+            # binary input file
+            # basic byte of entropy for this test
+            entropy_byte = b'\x01'
+            valid_entropy_bytes_lengths = list(range(16, 32+1, 4))
+            for entropy_bytes_length in range(0, 40):
+                if entropy_bytes_length in valid_entropy_bytes_lengths:
+                    continue
+                with self.subTest(entropy_bytes_length=entropy_bytes_length):
+                    with open(os.path.join(tmpdir, '__entropy_binary__.dat'), 'wb') as f:
+                        f.write(entropy_byte * entropy_bytes_length)
+                    cli = subprocess.run(['mnemoniccli', '-g', '-e', f.name, '--format', 'bin'],
+                                         cwd=self.cli_dir, capture_output=True, text=True, timeout=self.timeout, shell=True)
+                    self.assertEqual('', cli.stdout)
+                    self.assertEqual('invalid entropy\n', cli.stderr)
+                    self.assertEqual(ExitCode.EX_DATAERR.value, cli.returncode)
+
 
 if __name__ == '__main__':
     unittest.main()
