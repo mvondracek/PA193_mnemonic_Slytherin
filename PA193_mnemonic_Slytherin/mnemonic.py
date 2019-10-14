@@ -61,8 +61,13 @@ def __mnemonic2entropy(mnemonic: str) -> bytes:
 def is_valid_entropy(entropy: bytes) -> bool:
     """Check whether provided bytes represent a valid entropy according to BIP39.
     https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
+
+    > The mnemonic must encode entropy in a multiple of 32 bits. With more entropy security is
+    > improved but the sentence length increases. We refer to the initial entropy length as ENT.
+    > The allowed size of ENT is 128-256 bits.
+    > https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
     """
-    raise NotImplementedError()
+    return len(entropy) in list(range(16, 32+1, 4))
 
 
 def is_valid_mnemonic(mnemonic: str) -> bool:
