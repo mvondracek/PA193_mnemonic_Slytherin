@@ -25,14 +25,14 @@ class TestMain(unittest.TestCase):
         self.cli_path = os.path.join(self.cli_dir, 'mnemoniccli.py')
 
     def assert_argument_error(self, args):
-        cli = subprocess.run(args, timeout=self.timeout, shell=True,
+        cli = subprocess.run(args, timeout=self.timeout,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         self.assertEqual('', cli.stdout)
         self.assertNotEqual('', cli.stderr)
         self.assertEqual(ExitCode.ARGUMENTS.value, cli.returncode)
 
     def assert_argument_ok_terminated(self, args):
-        cli = subprocess.run(args, timeout=self.timeout, shell=True,
+        cli = subprocess.run(args, timeout=self.timeout,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         self.assertNotEqual('', cli.stdout)
         self.assertEqual('', cli.stderr)
@@ -86,7 +86,7 @@ class TestMain(unittest.TestCase):
                     with open(os.path.join(tmpdir, '__entropy_binary__.dat'), 'wb') as f:
                         f.write(entropy_byte * entropy_bytes_length)
                     cli = subprocess.run(['python', self.cli_path, '-g', '-e', f.name, '--format', 'bin'],
-                                         timeout=self.timeout, shell=True,
+                                         timeout=self.timeout,
                                          stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
                     self.assertEqual('', cli.stdout)
                     self.assertEqual('invalid entropy\n', cli.stderr)
