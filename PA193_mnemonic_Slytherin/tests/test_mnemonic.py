@@ -3,6 +3,7 @@ from binascii import unhexlify
 from unittest import TestCase
 
 from PA193_mnemonic_Slytherin.mnemonic import do_some_work
+from PA193_mnemonic_Slytherin.mnemonic import _entropy2mnemonic, _mnemonic2entropy
 
 from PA193_mnemonic_Slytherin.mnemonic import generate, recover, verify
 
@@ -193,3 +194,16 @@ class TestMnemonicPublic(TestCase):
     def test_verify(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             self.assertTrue(verify(test_vector[1], unhexlify(test_vector[2]), TREZOR_PASSWORD))
+
+class TestMnemonicEntropy(TestCase):
+    """Tests for mnemonic entropy conversions.
+    """
+
+    def test_mnemonic2entropy(self):
+        for test_vector in TREZOR_TEST_VECTORS['english']:
+            self.assertEqual(unhexlify(test_vector[0]), _mnemonic2entropy(test_vector[1]))
+
+    def test_entropy2mnemonic(self):
+        for test_vector in TREZOR_TEST_VECTORS['english']:
+            self.assertEqual(test_vector[1], _entropy2mnemonic(unhexlify(test_vector[0])))
+

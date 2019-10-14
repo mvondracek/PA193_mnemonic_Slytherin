@@ -55,32 +55,70 @@ def __get_dictionary() -> Tuple[List[str], Dict[str, int]]:
     return (l, d)
 
 
-def __entropy2mnemonic(entropy: bytes) -> str:
+def __get_entropy_checksum(entropy: bytes, length: int) -> int:
+    """Calculate entropy checksum of set length
+    :rtype: int
+    :return: checksum
+    """
+    entropy_hash = hashlib.sha256(entropy).digest()
+    return int.from_bytes(entropy_hash, byteorder='big') >> 256 - length
+    
+
+def _entropy2mnemonic(entropy: bytes) -> str:
     """Convert entropy to mnemonic phrase using dictionary.
     :rtype: str
     :return: Mnemonic phrase
+
+    > https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
+    'Checksum is computed using first ENT/32 bits of SHA256 hash. Concatenated bits are split
+    into groups of 11 bits, each encoding a number from 0-2047, serving as an index into a
+    wordlist.'
     """
     word_list, _ = __get_dictionary()
-    checksum = hashlib.sha256(entropy).digest()
     shift = len(entropy) // 4
-    entropy_bin = (int.from_bytes(entropy, byteorder='big') << shift) |\
-                  (int.from_bytes(checksum, byteorder='big') >> 256 - shift)
-    indexes = [(entropy_bin >> i * 11) & 2047 for i in reversed(range(shift * 3))]
+    checksum = __get_entropy_checksum(entropy, shift)
+
+    # Concatenated bits representing the indexes
+    indexes_bin = (int.from_bytes(entropy, byteorder='big') << shift) | checksum
+
+    # List of indexes, number of which is MS = (ENT + CS) / 11 == shift * 3
+    indexes = [(indexes_bin >> i * 11) & 2047 for i in reversed(range(shift * 3))]
+
     words = [word_list[i] for i in indexes]
     return ' '.join(words)
 
 
-def __mnemonic2entropy(mnemonic: str) -> bytes:
+def _mnemonic2entropy(mnemonic: str) -> bytes:
     """Convert mnemonic phrase to entropy using dictionary.
+    :raises ValueError: on invalid parameters
     :rtype: bytes
-    :return: Entropy with appended checksum in the last byte
+    :return: Entropy
     """
     _, word_dict = __get_dictionary()
     words = mnemonic.split()
-    l = (len(words))
-    indexes = [word_dict[word] for word in words]
-    entropy_bin = sum([indexes[-i - 1] << i * 11 for i in reversed(range(l))]) << l - (l // 8) * 8
-    return entropy_bin.to_bytes((l * 11 + 7) // 8, byteorder='big')
+    l = len(words)
+    
+    try:
+        indexes = [word_dict[word] for word in words]
+    except KeyError:
+        raise ValueError('invalid mnemonic')
+
+    # Concatenate indexes into single 
+    indexes_bin = sum([indexes[-i - 1] << i * 11 for i in reversed(range(l))])
+
+    # Number of bits entropy is shifted by
+    shift = l * 11 // 32
+
+    checksum = indexes_bin & (pow(2, shift) - 1)
+    entropy_bin =  indexes_bin >> shift
+    entropy = entropy_bin.to_bytes((l * 11 - shift) // 8, byteorder='big')
+
+    # Check correctness
+    check = __get_entropy_checksum(entropy, shift)
+    if check != checksum:
+        raise ValueError('invalid mnemonic')
+    
+    return entropy
 
 
 def __is_valid_entropy(entropy: bytes) -> bool:
@@ -93,12 +131,6 @@ def __is_valid_entropy(entropy: bytes) -> bool:
     > https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
     """
     return len(entropy) in list(range(16, 32+1, 4))
-
-
-def __is_valid_mnemonic(mnemonic: str) -> bool:
-    """Check whether provided string represents a valid mnemonic phrase based on current dictionary.
-    """
-    pass
 
 
 def __is_valid_seed(seed: bytes) -> bool:
