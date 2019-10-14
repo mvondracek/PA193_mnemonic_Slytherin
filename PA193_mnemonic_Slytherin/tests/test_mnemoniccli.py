@@ -24,15 +24,15 @@ class TestMain(unittest.TestCase):
         self.cli_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 
     def assert_argument_error(self, args):
-        cli = subprocess.run(args, cwd=self.cli_dir, capture_output=True, timeout=self.timeout, shell=True)
-        self.assertEqual(b'', cli.stdout)
-        self.assertNotEqual(b'', cli.stderr)
+        cli = subprocess.run(args, cwd=self.cli_dir, capture_output=True, text=True, timeout=self.timeout, shell=True)
+        self.assertEqual('', cli.stdout)
+        self.assertNotEqual('', cli.stderr)
         self.assertEqual(ExitCode.ARGUMENTS.value, cli.returncode)
 
     def assert_argument_ok_terminated(self, args):
-        cli = subprocess.run(args, cwd=self.cli_dir, capture_output=True, timeout=self.timeout, shell=True)
-        self.assertNotEqual(b'', cli.stdout)
-        self.assertEqual(b'', cli.stderr)
+        cli = subprocess.run(args, cwd=self.cli_dir, capture_output=True, text=True, timeout=self.timeout, shell=True)
+        self.assertNotEqual('', cli.stdout)
+        self.assertEqual('', cli.stderr)
         self.assertEqual(ExitCode.EX_OK.value, cli.returncode)
 
     def test_arguments_error(self):
