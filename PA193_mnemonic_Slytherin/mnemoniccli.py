@@ -15,11 +15,13 @@ import logging
 import os
 import sys
 import warnings
+from binascii import unhexlify, hexlify
 from enum import Enum, unique
 from pprint import saferepr
+import typing
 from typing import Sequence
 
-from PA193_mnemonic_Slytherin import do_some_work
+from PA193_mnemonic_Slytherin import generate, recover, verify
 
 __version__ = '0.1.0'
 __author__ = 'Team Slytherin: @sobuch, @lsolodkova, @mvondracek.'
@@ -47,6 +49,9 @@ class ExitCode(Enum):
 
     EX_NOPERM = 77
     """Permission denied."""
+
+    SEEDS_DO_NOT_MATCH = 125
+    """Provided seed and mnemonic phrase (seed generated from mnemonic phrase) do not match."""
 
     KEYBOARD_INTERRUPT = 130
     """Program received SIGINT."""
@@ -82,7 +87,63 @@ def main(argv) -> ExitCode:
         logging.disable(logging.CRITICAL)
     logger.debug('Config parsed from args.')
 
-    do_some_work(1)
+    read_mode = 'rb' if config.format is Config.Format.BINARY else 'r'
+    write_mode = 'wb' if config.format is Config.Format.BINARY else 'w'
+    # region # TODO What types of errors/exceptions can happen here?
+    if config.generate:
+        # TODO Check file size before reading?
+        with open(config.entropy_filepath, read_mode) as file:
+            entropy = file.read()  # type: typing.Union[bytes, str]
+        if config.format is Config.Format.TEXT_HEXADECIMAL:
+            entropy = unhexlify(entropy)  # type: bytes
+        # TODO Raises: ValueError – on invalid parameters
+        mnemonic, seed = generate(entropy, config.password)
+        with open(config.mnemonic_filepath, 'w') as file:
+            file.write(mnemonic)
+        logger.info('Mnemonic written to {}.'.format(config.mnemonic_filepath))
+        with open(config.seed_filepath, write_mode) as file:
+            if config.format is Config.Format.TEXT_HEXADECIMAL:
+                seed = hexlify(seed)
+            file.write(seed)
+        logger.info('Seed written to {}.'.format(config.seed_filepath))
+        print('[DONE] Generate, mnemonic in {}, seed in {}.'.format(config.mnemonic_filepath, config.seed_filepath))
+    elif config.recover:
+        # TODO Check file size before reading?
+        with open(config.mnemonic_filepath, 'r') as file:
+            mnemonic = file.read()  # type: str
+        # TODO Raises: ValueError – on invalid parameters
+        entropy, seed = recover(mnemonic, config.password)
+        with open(config.entropy_filepath, write_mode) as file:
+            if config.format is Config.Format.TEXT_HEXADECIMAL:
+                entropy = hexlify(entropy)
+            file.write(entropy)
+        logger.info('Entropy written to {}.'.format(config.entropy_filepath))
+        with open(config.seed_filepath, write_mode) as file:
+            if config.format is Config.Format.TEXT_HEXADECIMAL:
+                seed = hexlify(seed)
+            file.write(seed)
+        logger.info('Seed written to {}.'.format(config.seed_filepath))
+        print('[DONE] Recover, entropy in {}, seed in {}.'.format(config.entropy_filepath, config.seed_filepath))
+    elif config.verify:
+        # TODO Check file size before reading?
+        with open(config.mnemonic_filepath, 'r') as file:
+            mnemonic = file.read()  # type: str
+        # TODO Check file size before reading?
+        with open(config.seed_filepath, read_mode) as file:
+            seed = file.read()  # type: typing.Union[bytes, str]
+        if config.format is Config.Format.TEXT_HEXADECIMAL:
+            seed = unhexlify(seed)  # type: bytes
+        # TODO Raises: ValueError – on invalid parameters
+        match = verify(mnemonic, seed, config.password)
+        if not match:
+            msg = 'Seeds do not match.'
+            logger.info(msg)
+            print(msg, file=sys.stderr)
+            return ExitCode.SEEDS_DO_NOT_MATCH
+        msg = 'Seeds match.'
+        logger.info(msg)
+        print(msg)
+    # endregion
 
     logger.debug('exit code: {} {}'.format(ExitCode.EX_OK.name, ExitCode.EX_OK.value))
     return ExitCode.EX_OK
