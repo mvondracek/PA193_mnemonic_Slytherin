@@ -18,8 +18,6 @@ from enum import Enum, unique
 from pprint import saferepr
 from typing import Sequence
 
-import coloredlogs
-
 from PA193_mnemonic_Slytherin import do_some_work
 
 __version__ = '0.1.0'
@@ -74,7 +72,8 @@ def main(argv) -> ExitCode:
 
     config = Config.parse_args(argv[1:])  # argv[0] is program name
     if config.logging_level:
-        coloredlogs.install(level=config.logging_level)
+        logging.basicConfig(format='%(asctime)s %(name)s[%(process)d] %(levelname)s %(message)s',
+                            level=config.logging_level)
     else:
         logging.disable(logging.CRITICAL)
     logger.debug('Config parsed from args.')

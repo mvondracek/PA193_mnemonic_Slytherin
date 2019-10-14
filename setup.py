@@ -34,9 +34,6 @@ setup(
 
     python_requires='>=3.5, <4',
     packages=['PA193_mnemonic_Slytherin'],
-    install_requires=[
-        'coloredlogs',
-    ],
     tests_require=[
         'nose',
         'pytest',
