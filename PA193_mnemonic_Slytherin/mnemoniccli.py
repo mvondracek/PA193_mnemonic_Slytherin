@@ -44,6 +44,12 @@ class ExitCode(Enum):
     ARGUMENTS = 2
     """Incorrect or missing arguments provided."""
 
+    EX_DATAERR = 65
+    """The input data was incorrect in some way."""
+
+    EX_NOINPUT = 66
+    """An input file (not a system file) did not exist or was not readable."""
+
     EX_UNAVAILABLE = 69
     """Required program or file does not exist."""
 
@@ -97,6 +103,7 @@ def main(argv) -> ExitCode:
         if config.format is Config.Format.TEXT_HEXADECIMAL:
             entropy = unhexlify(entropy)  # type: bytes
         # TODO Raises: ValueError – on invalid parameters
+        # TODO if input is invalid, terminate with EX_DATAERR
         mnemonic, seed = generate(entropy, config.password)
         with open(config.mnemonic_filepath, 'w') as file:
             file.write(mnemonic)
@@ -112,6 +119,7 @@ def main(argv) -> ExitCode:
         with open(config.mnemonic_filepath, 'r') as file:
             mnemonic = file.read()  # type: str
         # TODO Raises: ValueError – on invalid parameters
+        # TODO if input is invalid, terminate with EX_DATAERR
         entropy, seed = recover(mnemonic, config.password)
         with open(config.entropy_filepath, write_mode) as file:
             if config.format is Config.Format.TEXT_HEXADECIMAL:
@@ -134,6 +142,7 @@ def main(argv) -> ExitCode:
         if config.format is Config.Format.TEXT_HEXADECIMAL:
             seed = unhexlify(seed)  # type: bytes
         # TODO Raises: ValueError – on invalid parameters
+        # TODO if input is invalid, terminate with EX_DATAERR
         match = verify(mnemonic, seed, config.password)
         if not match:
             msg = 'Seeds do not match.'
