@@ -28,11 +28,8 @@ def __generate_seed(mnemonic: str, seed_password: str = '') -> bytes:
     :rtype: bytes
     :return: Seed
     """
-    #who must check the encoding of both inputs? should be UTF-8 NFKD
-    #where should I catch UnicodeError?
+    #the encoding of both inputs should be UTF-8 NFKD
     mnemonic = mnemonic.encode()  #encoding string into bytes, UTF-8 by default
-    #in documentation, input is called a passphrase
-    #and "mnemonic"+passphrase is called a password. Do we need to change the names?
     passphrase = "mnemonic" + seed_password
     passphrase = passphrase.encode()
     return pbkdf2_hmac('sha512', mnemonic, passphrase, PBKDF2_ROUNDS, SEED_LEN)
@@ -87,8 +84,7 @@ def __is_valid_mnemonic(mnemonic: str) -> bool:
 def __is_valid_seed(seed: bytes) -> bool:
     """Check whether provided bytes represent a valid seed.
     """
-    if not (type(seed) == bytes) or (len(seed) != SEED_LEN): return False
-    else: return True
+    return isinstance(seed, bytes) and len(seed) == SEED_LEN
 
 
 def _secure_seed_compare(expected_seed: bytes, actual_seed: bytes) -> bool:

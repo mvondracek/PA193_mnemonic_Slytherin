@@ -3,6 +3,7 @@ from binascii import unhexlify
 from unittest import TestCase
 
 from PA193_mnemonic_Slytherin.mnemonic import do_some_work
+from PA193_mnemonic_Slytherin.mnemonic import __generate_seed
 
 from PA193_mnemonic_Slytherin.mnemonic import generate, recover, verify
 
@@ -193,3 +194,11 @@ class TestMnemonicPublic(TestCase):
     def test_verify(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             self.assertTrue(verify(test_vector[1], unhexlify(test_vector[2]), TREZOR_PASSWORD))
+
+class TestSeed(TestCase):
+    """Tests for seed generation
+    """
+    
+    def test_generate_seed(self):
+        for test_vector in TREZOR_TEST_VECTORS['english']:
+            self.assertEqual(unhexlify(test_vector[2]), __generate_seed(test_vector[1],TREZOR_PASSWORD))
