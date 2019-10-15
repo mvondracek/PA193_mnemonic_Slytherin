@@ -96,7 +96,7 @@ def _secure_seed_compare(expected_seed: bytes, actual_seed: bytes) -> bool:
     #  > and lengths of a and b—but not their values.
     #
     # Type and length of seeds is known to the attacker, but not the value of expected seed.
-    if not (type(expected_seed) == type(actual_seed) == bytes):
+    if not (isinstance(expected_seed, bytes) and isinstance(actual_seed, bytes)):
         # Function `hmac.compare_digest` accepts strings & bytes and raises TypeError
         # for other types. It would accept two strings, but we accept only two
         # bytes-like objects, therefore we raise TypeError here.
