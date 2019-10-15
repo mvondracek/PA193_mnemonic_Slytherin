@@ -106,10 +106,15 @@ def _mnemonic2entropy(mnemonic: str) -> bytes:
     :rtype: bytes
     :return: Entropy
     """
-    _, word_dict = __get_dictionary()
+    if not isinstance(mnemonic, str):
+        raise ValueError('invalid mnemonic')
+    
     words = mnemonic.split()
     l = len(words)
-    
+    if not l in (12, 15, 18, 21, 24):
+        raise ValueError('invalid mnemonic')
+
+    _, word_dict = __get_dictionary()
     try:
         indexes = [word_dict[word] for word in words]
     except KeyError:
