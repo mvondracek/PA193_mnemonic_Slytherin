@@ -18,6 +18,7 @@ __author__ = 'Team Slytherin: @sobuch, @lsolodkova, @mvondracek.'
 
 logger = logging.getLogger(__name__)
 
+ENGLISH_DICTIONARY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'english.txt')
 
 def __generate_seed(mnemonic: str, seed_password: str = '') -> bytes:
     """Generate seed from provided mnemonic phrase.
@@ -40,7 +41,7 @@ def __generate_seed(mnemonic: str, seed_password: str = '') -> bytes:
 # - dictionary is too big (2048 lines OK, but too long words) like hundreds of MB...
 # - every line has exactly 1 word (no whitespaces)
 
-def __get_dictionary() -> Tuple[List[str], Dict[str, int]]:
+def __get_dictionary(file_path: str=ENGLISH_DICTIONARY_PATH) -> Tuple[List[str], Dict[str, int]]:
     """Load the dictionary.
     Currently uses 1 default dictionary with English words.
     # TODO Should we support multiple dictionaries for various languages?
@@ -51,7 +52,7 @@ def __get_dictionary() -> Tuple[List[str], Dict[str, int]]:
 
     """
     l = []
-    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'english.txt'), 'r') as f:
+    with open(file_path, 'r') as f:
         for i in range(2048):
             l.append(next(f).strip())
             if len(l[-1]) > 16 or len(l[-1].split()) != 1:
