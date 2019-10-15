@@ -21,7 +21,7 @@ PBKDF2_ROUNDS = 2048
 SEED_LEN = 64
 
 
-def __generate_seed(mnemonic: str, seed_password: str = '') -> bytes:
+def _generate_seed(mnemonic: str, seed_password: str = '') -> bytes:
     """Generate seed from provided mnemonic phrase.
     Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
     (empty string) by default.
@@ -107,7 +107,7 @@ def generate(entropy: bytes, seed_password: str = '') -> Tuple[str, bytes]:
         raise ValueError('invalid entropy')
 
     mnemonic = __entropy2mnemonic(entropy)
-    seed = __generate_seed(mnemonic, seed_password)
+    seed = _generate_seed(mnemonic, seed_password)
     return mnemonic, seed
 
 
@@ -123,7 +123,7 @@ def recover(mnemonic: str, seed_password: str = '') -> Tuple[bytes, bytes]:
         raise ValueError('invalid mnemonic')
 
     entropy = __mnemonic2entropy(mnemonic)
-    seed = __generate_seed(mnemonic, seed_password)
+    seed = _generate_seed(mnemonic, seed_password)
     return entropy, seed
 
 
@@ -140,7 +140,7 @@ def verify(mnemonic: str, expected_seed: bytes, seed_password: str = '') -> bool
     if not __is_valid_seed(expected_seed):
         raise ValueError('invalid expected_seed')
 
-    generated_seed = __generate_seed(mnemonic, seed_password)
+    generated_seed = _generate_seed(mnemonic, seed_password)
     return _secure_seed_compare(expected_seed, generated_seed)
 
 
