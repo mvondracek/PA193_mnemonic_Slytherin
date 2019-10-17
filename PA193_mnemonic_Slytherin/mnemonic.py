@@ -58,7 +58,7 @@ def __mnemonic2entropy(mnemonic: str) -> bytes:
     pass
 
 
-def __is_valid_entropy(entropy: bytes) -> bool:
+def is_valid_entropy(entropy: bytes) -> bool:
     """Check whether provided bytes represent a valid entropy according to BIP39.
     https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
 
@@ -70,18 +70,18 @@ def __is_valid_entropy(entropy: bytes) -> bool:
     return len(entropy) in list(range(16, 32+1, 4))
 
 
-def __is_valid_mnemonic(mnemonic: str) -> bool:
+def is_valid_mnemonic(mnemonic: str) -> bool:
     """Check whether provided string represents a valid mnemonic phrase based on current dictionary.
     Currently uses 1 default dictionary with English words.
     # TODO Should we support multiple dictionaries for various languages?
     """
-    pass
+    raise NotImplementedError()
 
 
-def __is_valid_seed(seed: bytes) -> bool:
+def is_valid_seed(seed: bytes) -> bool:
     """Check whether provided bytes represent a valid seed.
     """
-    pass
+    raise NotImplementedError()
 
 
 def _secure_seed_compare(expected_seed: bytes, actual_seed: bytes) -> bool:
