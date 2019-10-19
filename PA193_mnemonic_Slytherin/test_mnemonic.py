@@ -208,6 +208,14 @@ class TestMnemonicPublic(TestCase):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             self.assertTrue(verify(test_vector[1], unhexlify(test_vector[2]), TREZOR_PASSWORD))
 
+    def test_verify_invalid_mnemonic_too_long(self):
+        """Too long mnemonic phrase which should not be propagated to BPKDF2."""
+        seed = unhexlify('c55257c360c07c72029aebc1b53c05ed0362ada38ead3e3e9efa3708e5349553'
+                         '1f09a6987599d18264c1e1c92f2cf141630c7a3c4ab7c81b2f001698e7463b04')
+        mnemonic = 'a' * 1024 * 1024 * 1024 * 2  # 2 GB
+        with self.assertRaises(ValueError):
+            verify(mnemonic, seed)
+
 
 class TestMnemonicEntropy(TestCase):
     """Tests for mnemonic entropy conversions.
