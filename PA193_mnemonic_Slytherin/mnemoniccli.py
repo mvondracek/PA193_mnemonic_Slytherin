@@ -188,7 +188,7 @@ def main(argv) -> ExitCode:
 class Config(object):
     @unique
     class Format(Enum):
-        """Formats for reading and writing entropy, seed, and mnemonic phrase."""
+        """Formats for reading and writing entropy and seed."""
         BINARY = 'bin'
         TEXT_HEXADECIMAL = 'hex'
 
