@@ -11,4 +11,5 @@ install:
 script:
   - python setup.py test
 after_success:
+  - coverage run --source=PA193_mnemonic_Slytherin setup.py test
   - coveralls
