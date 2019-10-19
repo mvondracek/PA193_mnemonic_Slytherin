@@ -21,7 +21,7 @@ from pprint import saferepr
 import typing
 from typing import Sequence
 
-from PA193_mnemonic_Slytherin import generate, recover, verify, is_valid_entropy, is_valid_seed
+from PA193_mnemonic_Slytherin import generate, recover, verify, is_valid_entropy
 
 __version__ = '0.1.0'
 __author__ = 'Team Slytherin: @sobuch, @lsolodkova, @mvondracek.'
@@ -155,13 +155,10 @@ def main(argv) -> ExitCode:
             seed = file.read()  # type: typing.Union[bytes, str]
         if config.format is Config.Format.TEXT_HEXADECIMAL:
             seed = unhexlify(seed)  # type: bytes
-        if not is_valid_seed(seed):
-            msg = 'invalid seed'
-            logger.critical(msg)
-            print(msg, file=sys.stderr)
         try:
             match = verify(mnemonic, seed, config.password)
         except ValueError as e:
+            # e ... ValueError('invalid expected_seed')
             # TODO invalid mnemonic
             logger.critical(str(e))
             print(str(e), file=sys.stderr)
