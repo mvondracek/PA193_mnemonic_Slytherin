@@ -10,6 +10,7 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 
 2019
 """
+from os import path
 
 from setuptools import setup
 
@@ -17,7 +18,7 @@ __author__ = 'Team Slytherin: @sobuch, @lsolodkova, @mvondracek.'
 
 
 def readme():
-    with open('README.md') as f:
+    with open(path.join(path.dirname(path.abspath(__file__)), 'README.md')) as f:
         return f.read()
 
 
@@ -34,12 +35,8 @@ setup(
 
     python_requires='>=3.5, <4',
     packages=['PA193_mnemonic_Slytherin'],
-    install_requires=[
-        'coloredlogs',
-    ],
     tests_require=[
         'nose',
-        'pytest',
     ],
     test_suite='nose.collector',
     entry_points={
