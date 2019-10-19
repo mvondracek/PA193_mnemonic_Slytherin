@@ -195,6 +195,12 @@ class TestMnemonicPublic(TestCase):
             self.assertEqual(test_vector[1], mnemonic)
             self.assertEqual(unhexlify(test_vector[2]), seed)
 
+    def test_generate_invalid_password_too_long(self):
+        entropy = unhexlify('00000000000000000000000000000000')
+        password = 'a' * 1024 * 1024 * 1024 * 2  # 2 GB
+        with self.assertRaises(ValueError):
+            generate(entropy, password)
+
     @unittest.skip("Skipping until dependencies of `recover` are implemented.")
     def test_recover(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
@@ -202,10 +208,25 @@ class TestMnemonicPublic(TestCase):
             self.assertEqual(unhexlify(test_vector[0]), entropy)
             self.assertEqual(unhexlify(test_vector[2]), seed)
 
+    def test_recover_invalid_password_too_long(self):
+        mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
+        password = 'a' * 1024 * 1024 * 1024 * 2  # 2 GB
+        with self.assertRaises(ValueError):
+            recover(mnemonic, password)
+
     @unittest.skip("Skipping until dependencies of `verify` are implemented.")
     def test_verify(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             self.assertTrue(verify(test_vector[1], unhexlify(test_vector[2]), TREZOR_PASSWORD))
+
+    def test_verify_invalid_password_too_long(self):
+        # TODO separate actions and add setUp
+        seed = unhexlify('c55257c360c07c72029aebc1b53c05ed0362ada38ead3e3e9efa3708e5349553'
+                         '1f09a6987599d18264c1e1c92f2cf141630c7a3c4ab7c81b2f001698e7463b04')
+        mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
+        password = 'a' * 1024 * 1024 * 1024 * 2  # 2 GB
+        with self.assertRaises(ValueError):
+            verify(mnemonic, seed, password)
 
 
 class TestSeed(TestCase):
@@ -215,6 +236,12 @@ class TestSeed(TestCase):
     def test_generate_seed(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             self.assertEqual(unhexlify(test_vector[2]), _generate_seed(test_vector[1], TREZOR_PASSWORD))
+
+    def test__generate_seed_invalid_password_too_long(self):
+        mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
+        password = 'a' * 1024 * 1024 * 1024 * 2  # 2 GB
+        with self.assertRaises(ValueError):
+            _generate_seed(mnemonic, password)
 
 
 if __name__ == '__main__':
