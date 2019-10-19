@@ -21,7 +21,7 @@ from pprint import saferepr
 import typing
 from typing import Sequence
 
-from PA193_mnemonic_Slytherin import generate, recover, verify, is_valid_entropy
+from PA193_mnemonic_Slytherin import generate, recover, verify
 
 __version__ = '0.1.0'
 __author__ = 'Team Slytherin: @sobuch, @lsolodkova, @mvondracek.'
@@ -103,15 +103,15 @@ def main(argv) -> ExitCode:
             entropy = file.read()  # type: typing.Union[bytes, str]
         if config.format is Config.Format.TEXT_HEXADECIMAL:
             entropy = unhexlify(entropy)  # type: bytes
-        if not is_valid_entropy(entropy):
-            msg = 'invalid entropy'
-            logger.critical(msg)
-            print(msg, file=sys.stderr)
+        try:
+            mnemonic, seed = generate(entropy, config.password)
+        except ValueError as e:
+            # e ... 'invalid entropy' ?
+            logger.critical(str(e))
+            print(str(e), file=sys.stderr)
             return ExitCode.EX_DATAERR
-            # TODO We could use EAFP instead of LBYL here, as `generate` Raises: ValueError – on invalid parameters
-            # or we could use class for entropy, mnemonic, and seed which would validate inputs on instantiation and
+            # We could use class for entropy, mnemonic, and seed which would validate inputs on instantiation and
             # raise exceptions.
-        mnemonic, seed = generate(entropy, config.password)
         with open(config.mnemonic_filepath, 'w') as file:
             file.write(mnemonic)
         logger.info('Mnemonic written to {}.'.format(config.mnemonic_filepath))
