@@ -9,6 +9,7 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 
 2019
 """
+import hmac
 import logging
 from typing import Tuple
 from hashlib import pbkdf2_hmac
@@ -94,10 +95,26 @@ def is_valid_seed(seed: bytes) -> bool:
 
 def _secure_seed_compare(expected_seed: bytes, actual_seed: bytes) -> bool:
     """Compare provided seeds in constant time to prevent timing attacks.
+    :raises TypeError: if parameters are not bytes-like objects
     :rtype: bool
     :return: True if seeds are the same, False otherwise.
     """
-    pass
+    # > hmac.compare_digest` uses an approach designed to prevent timing
+    # > analysis by avoiding content-based short circuiting behaviour, making
+    #  > it appropriate for cryptography
+    # > https://docs.python.org/3.7/library/hmac.html#hmac.compare_digest
+    #
+    # > Note: If a and b are of different lengths, or if an error occurs,
+    # > a timing attack could theoretically reveal information about the types
+    #  > and lengths of a and b—but not their values.
+    #
+    # Type and length of seeds is known to the attacker, but not the value of expected seed.
+    if not (isinstance(expected_seed, bytes) and isinstance(actual_seed, bytes)):
+        # Function `hmac.compare_digest` accepts strings & bytes and raises TypeError
+        # for other types. It would accept two strings, but we accept only two
+        # bytes-like objects, therefore we raise TypeError here.
+        raise TypeError('a bytes-like object is required')
+    return hmac.compare_digest(expected_seed, actual_seed)
 
 
 def generate(entropy: bytes, seed_password: str = '') -> Tuple[str, bytes]:
