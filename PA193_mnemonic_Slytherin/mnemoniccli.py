@@ -129,7 +129,6 @@ def main(argv) -> ExitCode:
             entropy, seed = recover(mnemonic, config.password)
         except ValueError as e:
             # e ... 'invalid mnemonic' ?
-            # TODO invalid password
             logger.critical(str(e))
             print(str(e), file=sys.stderr)
             return ExitCode.EX_DATAERR
