@@ -12,20 +12,28 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 import hmac
 import logging
 from typing import Tuple
+from hashlib import pbkdf2_hmac
 
 __author__ = 'Team Slytherin: @sobuch, @lsolodkova, @mvondracek.'
 
 logger = logging.getLogger(__name__)
 
+PBKDF2_ROUNDS = 2048
+SEED_LEN = 64
 
-def __generate_seed(mnemonic: str, seed_password: str = '') -> bytes:
+
+def _generate_seed(mnemonic: str, seed_password: str = '') -> bytes:
     """Generate seed from provided mnemonic phrase.
     Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
     (empty string) by default.
     :rtype: bytes
     :return: Seed
     """
-    pass
+    # the encoding of both inputs should be UTF-8 NFKD
+    mnemonic = mnemonic.encode()  # encoding string into bytes, UTF-8 by default
+    passphrase = "mnemonic" + seed_password
+    passphrase = passphrase.encode()
+    return pbkdf2_hmac('sha512', mnemonic, passphrase, PBKDF2_ROUNDS, SEED_LEN)
 
 
 # TODO: functions __entropy2mnemonic, __mnemonic2entropy, __is_valid_mnemonic work with dictionary, we could use single
@@ -59,25 +67,30 @@ def __mnemonic2entropy(mnemonic: str) -> bytes:
     pass
 
 
-def __is_valid_entropy(entropy: bytes) -> bool:
+def is_valid_entropy(entropy: bytes) -> bool:
     """Check whether provided bytes represent a valid entropy according to BIP39.
     https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
+
+    > The mnemonic must encode entropy in a multiple of 32 bits. With more entropy security is
+    > improved but the sentence length increases. We refer to the initial entropy length as ENT.
+    > The allowed size of ENT is 128-256 bits.
+    > https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
     """
-    pass
+    return len(entropy) in list(range(16, 32+1, 4))
 
 
-def __is_valid_mnemonic(mnemonic: str) -> bool:
+def is_valid_mnemonic(mnemonic: str) -> bool:
     """Check whether provided string represents a valid mnemonic phrase based on current dictionary.
     Currently uses 1 default dictionary with English words.
     # TODO Should we support multiple dictionaries for various languages?
     """
-    pass
+    raise NotImplementedError()
 
 
-def __is_valid_seed(seed: bytes) -> bool:
+def is_valid_seed(seed: bytes) -> bool:
     """Check whether provided bytes represent a valid seed.
     """
-    pass
+    return isinstance(seed, bytes) and len(seed) == SEED_LEN
 
 
 def _secure_seed_compare(expected_seed: bytes, actual_seed: bytes) -> bool:
@@ -112,11 +125,11 @@ def generate(entropy: bytes, seed_password: str = '') -> Tuple[str, bytes]:
     :rtype: Tuple[str, bytes]
     :return: Two item tuple where first is mnemonic phrase and second is seed.
     """
-    if not __is_valid_entropy(entropy):
+    if not is_valid_entropy(entropy):
         raise ValueError('invalid entropy')
 
     mnemonic = __entropy2mnemonic(entropy)
-    seed = __generate_seed(mnemonic, seed_password)
+    seed = _generate_seed(mnemonic, seed_password)
     return mnemonic, seed
 
 
@@ -128,11 +141,11 @@ def recover(mnemonic: str, seed_password: str = '') -> Tuple[bytes, bytes]:
     :rtype: Tuple[bytes, bytes]
     :return: Two item tuple where first is initial entropy and second is seed.
     """
-    if not __is_valid_mnemonic(mnemonic):
+    if not is_valid_mnemonic(mnemonic):
         raise ValueError('invalid mnemonic')
 
     entropy = __mnemonic2entropy(mnemonic)
-    seed = __generate_seed(mnemonic, seed_password)
+    seed = _generate_seed(mnemonic, seed_password)
     return entropy, seed
 
 
@@ -144,12 +157,12 @@ def verify(mnemonic: str, expected_seed: bytes, seed_password: str = '') -> bool
     :rtype: bool
     :return: True if provided phrase generates expected seed, False otherwise.
     """
-    if not __is_valid_mnemonic(mnemonic):
+    if not is_valid_mnemonic(mnemonic):
         raise ValueError('invalid mnemonic')
-    if not __is_valid_seed(expected_seed):
+    if not is_valid_seed(expected_seed):
         raise ValueError('invalid expected_seed')
 
-    generated_seed = __generate_seed(mnemonic, seed_password)
+    generated_seed = _generate_seed(mnemonic, seed_password)
     return _secure_seed_compare(expected_seed, generated_seed)
 
 
