@@ -21,7 +21,7 @@ from pprint import saferepr
 import typing
 from typing import Sequence
 
-from PA193_mnemonic_Slytherin import generate, recover, verify, is_valid_entropy, is_valid_mnemonic, is_valid_seed
+from PA193_mnemonic_Slytherin import generate, recover, verify, is_valid_entropy, is_valid_seed
 
 __version__ = '0.1.0'
 __author__ = 'Team Slytherin: @sobuch, @lsolodkova, @mvondracek.'
@@ -125,15 +125,16 @@ def main(argv) -> ExitCode:
         # TODO Check file size before reading?
         with open(config.mnemonic_filepath, 'r') as file:
             mnemonic = file.read()  # type: str
-        if not is_valid_mnemonic(mnemonic):
-            msg = 'invalid mnemonic'
-            logger.critical(msg)
-            print(msg, file=sys.stderr)
+        try:
+            entropy, seed = recover(mnemonic, config.password)
+        except ValueError as e:
+            # e ... 'invalid mnemonic' ?
+            # TODO invalid password
+            logger.critical(str(e))
+            print(str(e), file=sys.stderr)
             return ExitCode.EX_DATAERR
-            # TODO We could use EAFP instead of LBYL here, as `recover` Raises: ValueError – on invalid parameters
-            # or we could use class for entropy, mnemonic, and seed which would validate inputs on instantiation and
+            # We could use class for entropy, mnemonic, and seed which would validate inputs on instantiation and
             # raise exceptions.
-        entropy, seed = recover(mnemonic, config.password)
         with open(config.entropy_filepath, write_mode) as file:
             if config.format is Config.Format.TEXT_HEXADECIMAL:
                 entropy = hexlify(entropy)
@@ -149,14 +150,6 @@ def main(argv) -> ExitCode:
         # TODO Check file size before reading?
         with open(config.mnemonic_filepath, 'r') as file:
             mnemonic = file.read()  # type: str
-        if not is_valid_mnemonic(mnemonic):
-            msg = 'invalid mnemonic'
-            logger.critical(msg)
-            print(msg, file=sys.stderr)
-            return ExitCode.EX_DATAERR
-            # TODO We could use EAFP instead of LBYL here, as `recover` Raises: ValueError – on invalid parameters
-            # or we could use class for entropy, mnemonic, and seed which would validate inputs on instantiation and
-            # raise exceptions.
         # TODO Check file size before reading?
         with open(config.seed_filepath, read_mode) as file:
             seed = file.read()  # type: typing.Union[bytes, str]
@@ -166,11 +159,15 @@ def main(argv) -> ExitCode:
             msg = 'invalid seed'
             logger.critical(msg)
             print(msg, file=sys.stderr)
+        try:
+            match = verify(mnemonic, seed, config.password)
+        except ValueError as e:
+            # TODO invalid mnemonic
+            logger.critical(str(e))
+            print(str(e), file=sys.stderr)
             return ExitCode.EX_DATAERR
-            # TODO We could use EAFP instead of LBYL here, as `verify` Raises: ValueError – on invalid parameters
-            # or we could use class for entropy, mnemonic, and seed which would validate inputs on instantiation and
+            # We could use class for entropy, mnemonic, and seed which would validate inputs on instantiation and
             # raise exceptions.
-        match = verify(mnemonic, seed, config.password)
         if not match:
             msg = 'Seeds do not match.'
             logger.info(msg)
