@@ -15,7 +15,7 @@ from unittest import TestCase
 
 from PA193_mnemonic_Slytherin.mnemonic import do_some_work
 from PA193_mnemonic_Slytherin.mnemonic import _entropy2mnemonic
-from PA193_mnemonic_Slytherin.mnemonic import _generate_seed, _secure_seed_compare
+from PA193_mnemonic_Slytherin.mnemonic import _generate_seed
 
 from PA193_mnemonic_Slytherin.mnemonic import Entropy, Mnemonic, Seed
 from PA193_mnemonic_Slytherin.mnemonic import generate, recover, verify

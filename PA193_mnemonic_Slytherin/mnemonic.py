@@ -25,7 +25,7 @@ PBKDF2_ROUNDS = 2048
 SEED_LEN = 64
 
 
-class Mnemonic:
+class Mnemonic(str):
     """Class for mnemonic representation.
     """
     
@@ -56,17 +56,16 @@ class Mnemonic:
         checksum = indexes_bin & (pow(2, shift) - 1)
         entropy_bin =  indexes_bin >> shift
         entropy = entropy_bin.to_bytes((l * 11 - shift) // 8, byteorder='big')
-
-        # Check correctness
-        check = __get_checksum(entropy, shift)
-        if check != checksum:
-            raise ValueError('Cannot instantiate mnemonic')
     
         self._entropy = Entropy(entropy)
-        self._str = mnemonic
+        # Check correctness
+        if checksum != self._entropy.checksum(shift):
+            raise ValueError('Cannot instantiate mnemonic')
+        
+        self.__repr__ = mnemonic
 
 
-class Entropy:
+class Entropy(bytes):
     """Class for entropy representation.
     """
     
@@ -82,9 +81,18 @@ class Entropy:
         """
         if len(entropy) not in list(range(16, 32+1, 4)):
             raise ValueError('Cannot instantiate entropy')
-        self._bytes = entropy
+        self.__repr__ = entropy
 
-class Seed:
+
+    def checksum(self, length: int) -> int:
+        """Calculate entropy checksum of set length
+        :rtype: int
+        :return: checksum
+        """
+        entropy_hash = sha256(self).digest()
+        return int.from_bytes(entropy_hash, byteorder='big') >> 256 - length
+
+class Seed(bytes):
     """Class for seed representation.
     """
     
@@ -94,7 +102,26 @@ class Seed:
         """
         if not isinstance(seed, bytes) or len(seed) != SEED_LEN:
             raise ValueError('Cannot instantiate seed')
-        self._bytes = seed
+        self.__repr__ = seed
+
+    def __eq__(self, other: object) -> bool:
+        """Compare provided seeds in constant time to prevent timing attacks.
+        :rtype: bool
+        :return: True if seeds are the same, False otherwise.
+        """
+        # > hmac.compare_digest` uses an approach designed to prevent timing
+        # > analysis by avoiding content-based short circuiting behaviour, making
+        #  > it appropriate for cryptography
+        # > https://docs.python.org/3.7/library/hmac.html#hmac.compare_digest
+        #
+        # > Note: If a and b are of different lengths, or if an error occurs,
+        # > a timing attack could theoretically reveal information about the types
+        #  > and lengths of a and b—but not their values.
+        #
+        # Type and length of seeds is known to the attacker, but not the value of expected seed.
+        if not isinstance(other, Seed):
+            return NotImplemented
+        return hmac.compare_digest(self, other)
 
     
 def _generate_seed(mnemonic: Mnemonic, seed_password: str = '') -> bytes:
@@ -105,7 +132,7 @@ def _generate_seed(mnemonic: Mnemonic, seed_password: str = '') -> bytes:
     :return: Seed
     """
     # the encoding of both inputs should be UTF-8 NFKD
-    mnemonic = mnemonic._str.encode()  # encoding string into bytes, UTF-8 by default
+    mnemonic = mnemonic.encode()  # encoding string into bytes, UTF-8 by default
     passphrase = "mnemonic" + seed_password
     passphrase = passphrase.encode()
     return pbkdf2_hmac('sha512', mnemonic, passphrase, PBKDF2_ROUNDS, SEED_LEN)
@@ -147,15 +174,6 @@ def __get_dictionary(file_path: str = ENGLISH_DICTIONARY_PATH) -> Tuple[List[str
 
     d = {l[i]: i for i in range(len(l))}
     return (l, d)
-
-
-def __get_checksum(buff: bytes, length: int) -> int:
-    """Calculate entropy checksum of set length
-    :rtype: int
-    :return: checksum
-    """
-    buff_hash = sha256(buff).digest()
-    return int.from_bytes(buff_hash, byteorder='big') >> 256 - length
     
 
 def _entropy2mnemonic(entropy: Entropy) -> str:
@@ -169,36 +187,17 @@ def _entropy2mnemonic(entropy: Entropy) -> str:
     wordlist.'
     """
     word_list, _ = __get_dictionary()
-    shift = len(entropy._bytes) // 4
-    checksum = __get_checksum(entropy._bytes, shift)
+    shift = len(entropy) // 4
+    checksum = entropy.checksum(shift)
 
     # Concatenated bits representing the indexes
-    indexes_bin = (int.from_bytes(entropy._bytes, byteorder='big') << shift) | checksum
+    indexes_bin = (int.from_bytes(entropy, byteorder='big') << shift) | checksum
 
     # List of indexes, number of which is MS = (ENT + CS) / 11 == shift * 3
     indexes = [(indexes_bin >> i * 11) & 2047 for i in reversed(range(shift * 3))]
 
     words = [word_list[i] for i in indexes]
     return ' '.join(words)
-
-
-def _secure_seed_compare(expected_seed: Seed, actual_seed: Seed) -> bool:
-    """Compare provided seeds in constant time to prevent timing attacks.
-    :raises TypeError: if parameters are not bytes-like objects
-    :rtype: bool
-    :return: True if seeds are the same, False otherwise.
-    """
-    # > hmac.compare_digest` uses an approach designed to prevent timing
-    # > analysis by avoiding content-based short circuiting behaviour, making
-    #  > it appropriate for cryptography
-    # > https://docs.python.org/3.7/library/hmac.html#hmac.compare_digest
-    #
-    # > Note: If a and b are of different lengths, or if an error occurs,
-    # > a timing attack could theoretically reveal information about the types
-    #  > and lengths of a and b—but not their values.
-    #
-    # Type and length of seeds is known to the attacker, but not the value of expected seed.
-    return hmac.compare_digest(expected_seed._bytes, actual_seed._bytes)
 
 
 def generate(entropy: Entropy, seed_password: str = '') -> Tuple[Mnemonic, Seed]:
