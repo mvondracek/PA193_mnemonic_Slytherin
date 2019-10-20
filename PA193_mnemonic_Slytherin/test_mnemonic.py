@@ -19,15 +19,6 @@ from PA193_mnemonic_Slytherin.mnemonic import _generate_seed, _secure_seed_compa
 from PA193_mnemonic_Slytherin.mnemonic import generate, recover, verify
 
 
-class TestDoSomeWork(TestCase):
-    """Placeholder for initial code structure."""
-
-    def test_do_some_work(self):
-        """Placeholder for initial code structure."""
-        self.assertTrue(do_some_work(1))
-        self.assertFalse(do_some_work(123))
-
-
 class TestMnemonicInternal(TestCase):
     def test_secure_seed_compare(self):
         seed = b'\x27\x4d\xdc\x52\x58\x02\xf7\xc8\x28\xd8\xef\x7d\xdb\xcd\xc5' \
