@@ -4,11 +4,13 @@
 [![Maintainability](https://api.codeclimate.com/v1/badges/2fced9c80af313478661/maintainability)](https://codeclimate.com/github/mvondracek/PA193_mnemonic_Slytherin/maintainability)
 [![security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://github.com/PyCQA/bandit)
 
-> [Secure Coding Principles and Practices (PA193)](https://is.muni.cz/course/fi/autumn2019/PA193?lang=en)<br/>
-> [Faculty of Informatics (FI)](https://www.fi.muni.cz/index.html.en)<br/>
+> [Secure Coding Principles and Practices (PA193)](https://is.muni.cz/course/fi/autumn2019/PA193?lang=en)\
+> [Faculty of Informatics (FI)](https://www.fi.muni.cz/index.html.en)\
 > [Masaryk University (MU)](https://www.muni.cz/en)
 
-**Team** Slytherin: [@sobuch](https://github.com/sobuch), [@lsolodkova](https://github.com/lsolodkova), [@mvondracek](https://github.com/mvondracek).
+**Team** Slytherin: [@sobuch](https://github.com/sobuch),
+[@lsolodkova](https://github.com/lsolodkova),
+[@mvondracek](https://github.com/mvondracek).
 
 ## Install
 
@@ -17,6 +19,8 @@ python setup.py install
 ~~~
 
 ## Development
-For development purposes, install the package and CLI tool using `pip install -e` in the root package folder. Please see
+
+For development purposes, install the package and CLI tool using
+`pip install -e` in the root package folder. Please see
 development guidelines in [CONTRIBUTING.md](/CONTRIBUTING.md).
 
