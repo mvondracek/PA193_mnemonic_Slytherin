@@ -14,7 +14,6 @@ from binascii import unhexlify
 from unittest import TestCase
 
 from PA193_mnemonic_Slytherin.mnemonic import do_some_work
-from PA193_mnemonic_Slytherin.mnemonic import _entropy2mnemonic
 
 from PA193_mnemonic_Slytherin.mnemonic import Entropy, Mnemonic, Seed
 from PA193_mnemonic_Slytherin.mnemonic import generate, recover, verify

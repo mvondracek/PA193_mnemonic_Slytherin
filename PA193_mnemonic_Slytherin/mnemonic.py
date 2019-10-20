@@ -25,6 +25,38 @@ PBKDF2_ROUNDS = 2048
 SEED_LEN = 64
 
 
+class dictionaryAccess:
+    """Abstract class for classes requiring dictionary access
+    """
+    
+    def __init__(self):
+        # TODO: functions __entropy2mnemonic, __mnemonic2entropy, __is_valid_mnemonic work with dictionary, we could use single
+        #       object with this dictionary to prevent multiple file opening and reading and to support multiple dictionaries
+        #       for various languages.
+        """Load the dictionary.
+        Currently uses 1 default dictionary with English words.
+        # TODO Should we support multiple dictionaries for various languages?
+        :raises FileNotFoundError: on missing file
+        :raises ValueError: on invalid dictionary
+        :rtype: Tuple[List[str], Dict[str, int]]
+        :return: List and dictionary of words
+        """
+        self.__dict_list = []
+        with open(file_path, 'r') as f:
+            for i in range(2048):
+                self.__dict_list.append(next(f).strip())
+                if len(self.__dict_list[-1]) > 16 or len(self.__dict_list[-1].split()) != 1:
+                    raise ValueError('invalid dictionary')
+            try:
+                next(f)
+            except StopIteration:
+                pass
+            else:
+                raise ValueError('invalid dictionary')
+
+        self.__dict_dict = {self.__dict_list[i]: i for i in range(len(self.__dict_list))}
+
+
 class Seed(bytes):
     """Class for seed representation.
     """
@@ -66,7 +98,7 @@ class Seed(bytes):
         return not (self == other)
 
 
-class Entropy(bytes):
+class Entropy(bytes, dictionaryAccess):
     """Class for entropy representation.
     """
 
@@ -94,7 +126,30 @@ class Entropy(bytes):
         return int.from_bytes(entropy_hash, byteorder='big') >> 256 - length
 
 
-class Mnemonic(str):
+    def toMnemonic(self) -> 'Mnemonic':
+        """Convert entropy to mnemonic phrase using dictionary.
+        :rtype: Mnemonic
+        :return: Mnemonic phrase
+
+        > https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
+        'Checksum is computed using first ENT/32 bits of SHA256 hash. Concatenated bits are split
+        into groups of 11 bits, each encoding a number from 0-2047, serving as an index into a
+        wordlist.'
+        """
+        shift = len(self) // 4
+        checksum = self.checksum(shift)
+
+        # Concatenated bits representing the indexes
+        indexes_bin = (int.from_bytes(self, byteorder='big') << shift) | checksum
+
+        # List of indexes, number of which is MS = (ENT + CS) / 11 == shift * 3
+        indexes = [(indexes_bin >> i * 11) & 2047 for i in reversed(range(shift * 3))]
+
+        words = [self.__dict_list[i] for i in indexes]
+        return Mnemonic(' '.join(words))
+
+
+class Mnemonic(str, dictionaryAccess):
     """Class for mnemonic representation.
     """
     
@@ -110,9 +165,8 @@ class Mnemonic(str):
         if not l in (12, 15, 18, 21, 24):
             raise ValueError('Cannot instantiate mnemonic')
 
-        _, word_dict = __get_dictionary()
         try:
-            indexes = [word_dict[word] for word in words]
+            indexes = [self.__dict_dict[word] for word in words]
         except KeyError:
             raise ValueError('Cannot instantiate mnemonic')
 
@@ -156,68 +210,6 @@ class Mnemonic(str):
         return self.__entropy
 
 
-# TODO: functions __entropy2mnemonic, __mnemonic2entropy, __is_valid_mnemonic work with dictionary, we could use single
-#       object with this dictionary to prevent multiple file opening and reading and to support multiple dictionaries
-#       for various languages.
-
-# TODO Possible problem with dictionary:
-# - file not found
-# - no permissions for file
-# - dictionary does not contain exactly 2048 lines
-# - dictionary is too big (2048 lines OK, but too long words) like hundreds of MB...
-# - every line has exactly 1 word (no whitespaces)
-
-def __get_dictionary(file_path: str = ENGLISH_DICTIONARY_PATH) -> Tuple[List[str], Dict[str, int]]:
-    """Load the dictionary.
-    Currently uses 1 default dictionary with English words.
-    # TODO Should we support multiple dictionaries for various languages?
-    :raises FileNotFoundError: on missing file
-    :raises ValueError: on invalid dictionary
-    :rtype: Tuple[List[str], Dict[str, int]]
-    :return: List and dictionary of words
-
-    """
-    l = []
-    with open(file_path, 'r') as f:
-        for i in range(2048):
-            l.append(next(f).strip())
-            if len(l[-1]) > 16 or len(l[-1].split()) != 1:
-                raise ValueError('invalid dictionary')
-        try:
-            next(f)
-        except StopIteration:
-            pass
-        else:
-            raise ValueError('invalid dictionary')
-
-    d = {l[i]: i for i in range(len(l))}
-    return (l, d)
-    
-
-def _entropy2mnemonic(entropy: Entropy) -> Mnemonic:
-    """Convert entropy to mnemonic phrase using dictionary.
-    :rtype: Mnemonic
-    :return: Mnemonic phrase
-
-    > https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
-    'Checksum is computed using first ENT/32 bits of SHA256 hash. Concatenated bits are split
-    into groups of 11 bits, each encoding a number from 0-2047, serving as an index into a
-    wordlist.'
-    """
-    word_list, _ = __get_dictionary()
-    shift = len(entropy) // 4
-    checksum = entropy.checksum(shift)
-
-    # Concatenated bits representing the indexes
-    indexes_bin = (int.from_bytes(entropy, byteorder='big') << shift) | checksum
-
-    # List of indexes, number of which is MS = (ENT + CS) / 11 == shift * 3
-    indexes = [(indexes_bin >> i * 11) & 2047 for i in reversed(range(shift * 3))]
-
-    words = [word_list[i] for i in indexes]
-    return Mnemonic(' '.join(words))
-
-
 def generate(entropy: Entropy, seed_password: str = '') -> Tuple[Mnemonic, Seed]:
     """Generate mnemonic phrase and seed based on provided entropy.
     Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
@@ -226,7 +218,7 @@ def generate(entropy: Entropy, seed_password: str = '') -> Tuple[Mnemonic, Seed]
     :rtype: Tuple[Mnemonic, Seed]
     :return: Two item tuple where first is mnemonic phrase and second is seed.
     """
-    mnemonic = _entropy2mnemonic(entropy)
+    mnemonic = entropy.toMnemonic()
     seed = mnemonic.toSeed(seed_password)
     return mnemonic, seed
 
