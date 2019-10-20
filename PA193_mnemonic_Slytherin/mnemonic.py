@@ -105,7 +105,7 @@ class Seed(bytes):
         self.__repr__ = seed
 
     def __eq__(self, other: object) -> bool:
-        """Compare provided seeds in constant time to prevent timing attacks.
+        """Compare seeds in constant time to prevent timing attacks.
         :rtype: bool
         :return: True if seeds are the same, False otherwise.
         """
@@ -122,6 +122,13 @@ class Seed(bytes):
         if not isinstance(other, Seed):
             return NotImplemented
         return hmac.compare_digest(self, other)
+
+    def __ne__(self, other: object) -> bool:
+        """Compare seeds in constant time to prevent timing attacks.
+        :rtype: bool
+        :return: False if seeds are the same, True otherwise.
+        """
+        return not (self == other)
 
     
 def _generate_seed(mnemonic: Mnemonic, seed_password: str = '') -> bytes:
