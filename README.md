@@ -1,6 +1,7 @@
 # BIP39 Mnemonic Phrase Generator and Verifier
 
 [![Build Status](https://travis-ci.org/mvondracek/PA193_mnemonic_Slytherin.svg?branch=dev)](https://travis-ci.org/mvondracek/PA193_mnemonic_Slytherin)
+[![Coverage Status](https://coveralls.io/repos/github/mvondracek/PA193_mnemonic_Slytherin/badge.svg)](https://coveralls.io/github/mvondracek/PA193_mnemonic_Slytherin)
 [![Maintainability](https://api.codeclimate.com/v1/badges/2fced9c80af313478661/maintainability)](https://codeclimate.com/github/mvondracek/PA193_mnemonic_Slytherin/maintainability)
 [![security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://github.com/PyCQA/bandit)
 
