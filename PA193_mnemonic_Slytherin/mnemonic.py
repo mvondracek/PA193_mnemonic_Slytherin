@@ -67,7 +67,7 @@ class Seed(bytes):
         """
         if not isinstance(seed, bytes) or len(seed) != SEED_LEN:
             raise ValueError('Cannot instantiate seed')
-        self.__repr__ = seed
+        self = seed
 
 
     def __eq__(self, other: object) -> bool:
@@ -116,7 +116,7 @@ class Entropy(bytes, dictionaryAccess):
 
         if len(entropy) not in list(range(16, 32+1, 4)):
             raise ValueError('Cannot instantiate entropy')
-        self.__repr__ = entropy
+        self = entropy
 
 
     def checksum(self, length: int) -> int:
@@ -188,7 +188,7 @@ class Mnemonic(str, dictionaryAccess):
         # Check correctness
         if checksum != self.__entropy.checksum(shift):
             raise ValueError('Cannot instantiate mnemonic')
-        str.__init__(self, mnemonic)
+        self = mnemonic
 
 
     def toSeed(self, seed_password: str = '') -> Seed:
