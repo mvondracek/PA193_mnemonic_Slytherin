@@ -62,21 +62,6 @@ class ExitCode(Enum):
     """Program received SIGINT."""
 
 
-def cli_entry_point():
-    try:
-        exit_code = main(sys.argv)
-    except KeyboardInterrupt:
-        print('Stopping.')
-        logger.warning('received KeyboardInterrupt, stopping')
-        sys.exit(ExitCode.KEYBOARD_INTERRUPT.value)
-    except Exception as e:
-        logger.critical(str(e) + ' ' + saferepr(e))
-        print(str(e), file=sys.stderr)
-        sys.exit(ExitCode.UNKNOWN_FAILURE.value)
-    else:
-        sys.exit(exit_code.value)
-
-
 class Config(object):
     @unique
     class Format(Enum):
@@ -217,6 +202,19 @@ class Config(object):
         return config
 
 
+def cli_entry_point():
+    try:
+        exit_code = main(sys.argv)
+    except KeyboardInterrupt:
+        print('Stopping.')
+        logger.warning('received KeyboardInterrupt, stopping')
+        sys.exit(ExitCode.KEYBOARD_INTERRUPT.value)
+    except Exception as e:
+        logger.critical(str(e) + ' ' + saferepr(e))
+        print(str(e), file=sys.stderr)
+        sys.exit(ExitCode.UNKNOWN_FAILURE.value)
+    else:
+        sys.exit(exit_code.value)
 
 
 def action_generate(config: Config) -> ExitCode:
