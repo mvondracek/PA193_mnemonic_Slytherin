@@ -215,7 +215,3 @@ class TestSeed(TestCase):
     def test_generate_seed(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             self.assertEqual(unhexlify(test_vector[2]), _generate_seed(test_vector[1], TREZOR_PASSWORD))
-
-
-if __name__ == '__main__':
-    unittest.main()

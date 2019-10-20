@@ -91,7 +91,3 @@ class TestMain(unittest.TestCase):
                     self.assertEqual('', cli.stdout)
                     self.assertEqual('invalid entropy\n', cli.stderr)
                     self.assertEqual(ExitCode.EX_DATAERR.value, cli.returncode)
-
-
-if __name__ == '__main__':
-    unittest.main()
