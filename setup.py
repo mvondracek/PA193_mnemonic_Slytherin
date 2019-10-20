@@ -37,6 +37,7 @@ setup(
     packages=['PA193_mnemonic_Slytherin'],
     tests_require=[
         'nose',
+        'coverage',
     ],
     test_suite='nose.collector',
     entry_points={

@@ -13,22 +13,10 @@ import unittest
 from binascii import unhexlify
 from unittest import TestCase
 
-from PA193_mnemonic_Slytherin.mnemonic import do_some_work
-
 from PA193_mnemonic_Slytherin.mnemonic import Entropy, Mnemonic, Seed
 from PA193_mnemonic_Slytherin.mnemonic import generate, recover, verify
 
 
-class TestDoSomeWork(TestCase):
-    """Placeholder for initial code structure."""
-
-    def test_do_some_work(self):
-        """Placeholder for initial code structure."""
-        self.assertTrue(do_some_work(1))
-        self.assertFalse(do_some_work(123))
-
-
-@unittest.skip("Skipping until tests are fixed, seed with len!=SEED_LEN are invalid")
 class TestMnemonicInternal(TestCase):
     def test_secure_seed_compare(self):
         seed = b'\x27\x4d\xdc\x52\x58\x02\xf7\xc8\x28\xd8\xef\x7d\xdb\xcd\xc5' \
@@ -241,7 +229,8 @@ class TestMnemonicPublic(TestCase):
             verify(mnemonic, seed)
 
 
-class TestMnemonicEntropy(TestCase):
+# CLASS INSTANTIANTION TESTS
+class TestMnemonic(TestCase):
     """Tests for mnemonic entropy conversions.
     """
     @unittest.skip("Skipping until we switcheed tests to class representation.")
@@ -265,7 +254,7 @@ class TestSeed(TestCase):
             self.assertEqual(unhexlify(test_vector[2]), _generate_seed(test_vector[1], TREZOR_PASSWORD))
 
 
-class TesteEntropy(TestCase):
+class TestEntropy(TestCase):
     """Tests for entropy generation
     """
 

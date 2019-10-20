@@ -249,12 +249,3 @@ def verify(mnemonic: Mnemonic, expected_seed: Seed, seed_password: str = '') -> 
     """
     generated_seed = mnemonic.toSeed(seed_password)
     return expected_seed == generated_seed
-
-
-def do_some_work(param: int) -> bool:
-    """Placeholder for initial code structure.
-    :rtype: bool
-    :return True if some work was successful, False otherwise.
-    # TODO remove this placeholder as soon as we have some real tests.
-    """
-    return param == 1
