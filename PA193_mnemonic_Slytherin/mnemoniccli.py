@@ -98,9 +98,13 @@ def main(argv) -> ExitCode:
     # region # TODO What types of errors/exceptions can happen here?
     if config.generate:
         # TODO Check file size before reading?
-        # TODO try to open file and if it fails, termiante with EX_NOINPUT
-        with open(config.entropy_filepath, read_mode) as file:
-            entropy = file.read()  # type: typing.Union[bytes, str]
+        try:
+            with open(config.entropy_filepath, read_mode) as file:
+                entropy = file.read()  # type: typing.Union[bytes, str]
+        except FileNotFoundError as e:
+            logger.critical(str(e))
+            print(str(e), file=sys.stderr)
+            return ExitCode.EX_NOINPUT
         if config.format is Config.Format.TEXT_HEXADECIMAL:
             entropy = unhexlify(entropy)  # type: bytes
         if not is_valid_entropy(entropy):
@@ -123,9 +127,13 @@ def main(argv) -> ExitCode:
         print('[DONE] Generate, mnemonic in {}, seed in {}.'.format(config.mnemonic_filepath, config.seed_filepath))
     elif config.recover:
         # TODO Check file size before reading?
-        # TODO try to open file and if it fails, termiante with EX_NOINPUT
-        with open(config.mnemonic_filepath, 'r') as file:
-            mnemonic = file.read()  # type: str
+        try:
+            with open(config.mnemonic_filepath, 'r') as file:
+                mnemonic = file.read()  # type: str
+        except FileNotFoundError as e:
+            logger.critical(str(e))
+            print(str(e), file=sys.stderr)
+            return ExitCode.EX_NOINPUT
         if not is_valid_mnemonic(mnemonic):
             msg = 'invalid mnemonic'
             logger.critical(msg)
@@ -148,9 +156,13 @@ def main(argv) -> ExitCode:
         print('[DONE] Recover, entropy in {}, seed in {}.'.format(config.entropy_filepath, config.seed_filepath))
     elif config.verify:
         # TODO Check file size before reading?
-        # TODO try to open file and if it fails, termiante with EX_NOINPUT
-        with open(config.mnemonic_filepath, 'r') as file:
-            mnemonic = file.read()  # type: str
+        try:
+            with open(config.mnemonic_filepath, 'r') as file:
+                mnemonic = file.read()  # type: str
+        except FileNotFoundError as e:
+            logger.critical(str(e))
+            print(str(e), file=sys.stderr)
+            return ExitCode.EX_NOINPUT
         if not is_valid_mnemonic(mnemonic):
             msg = 'invalid mnemonic'
             logger.critical(msg)
@@ -160,9 +172,13 @@ def main(argv) -> ExitCode:
             # or we could use class for entropy, mnemonic, and seed which would validate inputs on instantiation and
             # raise exceptions.
         # TODO Check file size before reading?
-        # TODO try to open file and if it fails, termiante with EX_NOINPUT
-        with open(config.seed_filepath, read_mode) as file:
-            seed = file.read()  # type: typing.Union[bytes, str]
+        try:
+            with open(config.seed_filepath, read_mode) as file:
+                seed = file.read()  # type: typing.Union[bytes, str]
+        except FileNotFoundError as e:
+            logger.critical(str(e))
+            print(str(e), file=sys.stderr)
+            return ExitCode.EX_NOINPUT
         if config.format is Config.Format.TEXT_HEXADECIMAL:
             seed = unhexlify(seed)  # type: bytes
         if not is_valid_seed(seed):
