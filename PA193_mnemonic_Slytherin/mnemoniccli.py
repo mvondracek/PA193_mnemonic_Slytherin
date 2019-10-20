@@ -13,11 +13,11 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 import argparse
 import logging
 import sys
+import typing
 import warnings
 from binascii import unhexlify, hexlify
 from enum import Enum, unique
 from pprint import saferepr
-import typing
 from typing import Sequence
 
 from PA193_mnemonic_Slytherin import generate, recover, verify, is_valid_entropy, is_valid_mnemonic, is_valid_seed
