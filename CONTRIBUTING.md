@@ -10,7 +10,7 @@
   without release branches. When a feature is finished in its *feature*
   branch, its author creates pull request to the `dev` branch. Branches
   `dev` and `master` are protected and require pull request review. The
-  author should request 2 other team members for a code review. Branch 
+  author should request 2 other team members for a code review. Branch
   `master` contains only *production-ready* state.
 
 ## Development Guidelines
