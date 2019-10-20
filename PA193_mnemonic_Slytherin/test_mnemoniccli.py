@@ -24,16 +24,18 @@ class TestMain(unittest.TestCase):
     SCRIPT = 'mnemoniccli.py'
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
+    def execute_cli(self, args):
+        return subprocess.run(args, timeout=self.TIMEOUT, cwd=self.SCRIPT_DIR,
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+
     def assert_argument_error(self, args):
-        cli = subprocess.run(args, timeout=self.TIMEOUT, cwd=self.SCRIPT_DIR,
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        cli = self.execute_cli(args)
         self.assertEqual('', cli.stdout)
         self.assertNotEqual('', cli.stderr)
         self.assertEqual(ExitCode.ARGUMENTS.value, cli.returncode)
 
     def assert_argument_ok_terminated(self, args):
-        cli = subprocess.run(args, timeout=self.TIMEOUT, cwd=self.SCRIPT_DIR,
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        cli = self.execute_cli(args)
         self.assertNotEqual('', cli.stdout)
         self.assertEqual('', cli.stderr)
         self.assertEqual(ExitCode.EX_OK.value, cli.returncode)
@@ -60,7 +62,8 @@ class TestMain(unittest.TestCase):
             non_existing_filepath = os.path.join(tmpdir, '__this_file_does_not_exist__')
             self.assert_argument_error([self.PYTHON, self.SCRIPT, '-g', '-e', non_existing_filepath])
             self.assert_argument_error([self.PYTHON, self.SCRIPT, '-r', '-m', non_existing_filepath])
-            self.assert_argument_error([self.PYTHON, self.SCRIPT, '-v', '-m', non_existing_filepath, '-s', non_existing_filepath])
+            self.assert_argument_error(
+                [self.PYTHON, self.SCRIPT, '-v', '-m', non_existing_filepath, '-s', non_existing_filepath])
 
             with open(os.path.join(tmpdir, '__this_file_exists__.txt'), 'w') as f:
                 f.write('foo bar')
@@ -85,9 +88,7 @@ class TestMain(unittest.TestCase):
                 with self.subTest(entropy_bytes_length=entropy_bytes_length):
                     with open(os.path.join(tmpdir, '__entropy_binary__.dat'), 'wb') as f:
                         f.write(entropy_byte * entropy_bytes_length)
-                    cli = subprocess.run([self.PYTHON, self.SCRIPT, '-g', '-e', f.name, '--format', 'bin'],
-                                         timeout=self.TIMEOUT, cwd=self.SCRIPT_DIR,
-                                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+                    cli = self.execute_cli([self.PYTHON, self.SCRIPT, '-g', '-e', f.name, '--format', 'bin'])
                     self.assertEqual('', cli.stdout)
                     self.assertEqual('invalid entropy\n', cli.stderr)
                     self.assertEqual(ExitCode.EX_DATAERR.value, cli.returncode)
