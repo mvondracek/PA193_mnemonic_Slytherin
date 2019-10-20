@@ -1,6 +1,4 @@
-engines:
-  bandit:
-    enabled: true
+version: "2"
 plugins:
   pep8:
     enabled: true
