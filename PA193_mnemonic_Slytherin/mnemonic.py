@@ -25,6 +25,75 @@ PBKDF2_ROUNDS = 2048
 SEED_LEN = 64
 
 
+class Seed(bytes):
+    """Class for seed representation.
+    """
+    
+    def __init__(self, seed: bytes):
+        """Check whether provided bytes represent a valid seed.
+        :raises ValueError: on invalid parameters
+        """
+        if not isinstance(seed, bytes) or len(seed) != SEED_LEN:
+            raise ValueError('Cannot instantiate seed')
+        self.__repr__ = seed
+
+
+    def __eq__(self, other: object) -> bool:
+        """Compare seeds in constant time to prevent timing attacks.
+        :rtype: bool
+        :return: True if seeds are the same, False otherwise.
+        """
+        # > hmac.compare_digest` uses an approach designed to prevent timing
+        # > analysis by avoiding content-based short circuiting behaviour, making
+        #  > it appropriate for cryptography
+        # > https://docs.python.org/3.7/library/hmac.html#hmac.compare_digest
+        #
+        # > Note: If a and b are of different lengths, or if an error occurs,
+        # > a timing attack could theoretically reveal information about the types
+        #  > and lengths of a and b—but not their values.
+        #
+        # Type and length of seeds is known to the attacker, but not the value of expected seed.
+        if not isinstance(other, Seed):
+            return NotImplemented
+        return hmac.compare_digest(self, other)
+
+
+    def __ne__(self, other: object) -> bool:
+        """Compare seeds in constant time to prevent timing attacks.
+        :rtype: bool
+        :return: False if seeds are the same, True otherwise.
+        """
+        return not (self == other)
+
+
+class Entropy(bytes):
+    """Class for entropy representation.
+    """
+
+    def __init__(self, entropy: bytes):
+        """Check whether provided bytes represent a valid entropy according to BIP39.
+        https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
+
+        > The mnemonic must encode entropy in a multiple of 32 bits. With more entropy security is
+        > improved but the sentence length increases. We refer to the initial entropy length as ENT.
+        > The allowed size of ENT is 128-256 bits.
+        > https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
+        :raises ValueError: on invalid parameters
+        """
+        if len(entropy) not in list(range(16, 32+1, 4)):
+            raise ValueError('Cannot instantiate entropy')
+        self.__repr__ = entropy
+
+
+    def checksum(self, length: int) -> int:
+        """Calculate entropy checksum of set length
+        :rtype: int
+        :return: checksum
+        """
+        entropy_hash = sha256(self).digest()
+        return int.from_bytes(entropy_hash, byteorder='big') >> 256 - length
+
+
 class Mnemonic(str):
     """Class for mnemonic representation.
     """
@@ -57,92 +126,34 @@ class Mnemonic(str):
         entropy_bin =  indexes_bin >> shift
         entropy = entropy_bin.to_bytes((l * 11 - shift) // 8, byteorder='big')
     
-        self._entropy = Entropy(entropy)
+        self.__entropy = Entropy(entropy)
         # Check correctness
-        if checksum != self._entropy.checksum(shift):
+        if checksum != self.__entropy.checksum(shift):
             raise ValueError('Cannot instantiate mnemonic')
         
         self.__repr__ = mnemonic
 
 
-class Entropy(bytes):
-    """Class for entropy representation.
-    """
-    
-    def __init__(self, entropy: bytes):
-        """Check whether provided bytes represent a valid entropy according to BIP39.
-        https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
-
-        > The mnemonic must encode entropy in a multiple of 32 bits. With more entropy security is
-        > improved but the sentence length increases. We refer to the initial entropy length as ENT.
-        > The allowed size of ENT is 128-256 bits.
-        > https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
-        :raises ValueError: on invalid parameters
+    def toSeed(self, seed_password: str = '') -> Seed:
+        """Generate seed from the mnemonic phrase.
+        Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
+        (empty string) by default.
+        :rtype: Seed
+        :return: Seed
         """
-        if len(entropy) not in list(range(16, 32+1, 4)):
-            raise ValueError('Cannot instantiate entropy')
-        self.__repr__ = entropy
+        # the encoding of both inputs should be UTF-8 NFKD
+        mnemonic = self.encode()  # encoding string into bytes, UTF-8 by default
+        passphrase = "mnemonic" + seed_password
+        passphrase = passphrase.encode()
+        return Seed(pbkdf2_hmac('sha512', mnemonic, passphrase, PBKDF2_ROUNDS, SEED_LEN))
 
 
-    def checksum(self, length: int) -> int:
-        """Calculate entropy checksum of set length
-        :rtype: int
-        :return: checksum
+    def toEntropy(self) -> Entropy:
+        """Generate entropy from the mnemonic phrase.
+        :rtype: Entropy
+        :return: entropy
         """
-        entropy_hash = sha256(self).digest()
-        return int.from_bytes(entropy_hash, byteorder='big') >> 256 - length
-
-class Seed(bytes):
-    """Class for seed representation.
-    """
-    
-    def __init__(self, seed: bytes):
-        """Check whether provided bytes represent a valid seed.
-        :raises ValueError: on invalid parameters
-        """
-        if not isinstance(seed, bytes) or len(seed) != SEED_LEN:
-            raise ValueError('Cannot instantiate seed')
-        self.__repr__ = seed
-
-    def __eq__(self, other: object) -> bool:
-        """Compare seeds in constant time to prevent timing attacks.
-        :rtype: bool
-        :return: True if seeds are the same, False otherwise.
-        """
-        # > hmac.compare_digest` uses an approach designed to prevent timing
-        # > analysis by avoiding content-based short circuiting behaviour, making
-        #  > it appropriate for cryptography
-        # > https://docs.python.org/3.7/library/hmac.html#hmac.compare_digest
-        #
-        # > Note: If a and b are of different lengths, or if an error occurs,
-        # > a timing attack could theoretically reveal information about the types
-        #  > and lengths of a and b—but not their values.
-        #
-        # Type and length of seeds is known to the attacker, but not the value of expected seed.
-        if not isinstance(other, Seed):
-            return NotImplemented
-        return hmac.compare_digest(self, other)
-
-    def __ne__(self, other: object) -> bool:
-        """Compare seeds in constant time to prevent timing attacks.
-        :rtype: bool
-        :return: False if seeds are the same, True otherwise.
-        """
-        return not (self == other)
-
-    
-def _generate_seed(mnemonic: Mnemonic, seed_password: str = '') -> bytes:
-    """Generate seed from provided mnemonic phrase.
-    Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
-    (empty string) by default.
-    :rtype: bytes
-    :return: Seed
-    """
-    # the encoding of both inputs should be UTF-8 NFKD
-    mnemonic = mnemonic.encode()  # encoding string into bytes, UTF-8 by default
-    passphrase = "mnemonic" + seed_password
-    passphrase = passphrase.encode()
-    return pbkdf2_hmac('sha512', mnemonic, passphrase, PBKDF2_ROUNDS, SEED_LEN)
+        return self.__entropy
 
 
 # TODO: functions __entropy2mnemonic, __mnemonic2entropy, __is_valid_mnemonic work with dictionary, we could use single
@@ -183,9 +194,9 @@ def __get_dictionary(file_path: str = ENGLISH_DICTIONARY_PATH) -> Tuple[List[str
     return (l, d)
     
 
-def _entropy2mnemonic(entropy: Entropy) -> str:
+def _entropy2mnemonic(entropy: Entropy) -> Mnemonic:
     """Convert entropy to mnemonic phrase using dictionary.
-    :rtype: str
+    :rtype: Mnemonic
     :return: Mnemonic phrase
 
     > https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
@@ -204,7 +215,7 @@ def _entropy2mnemonic(entropy: Entropy) -> str:
     indexes = [(indexes_bin >> i * 11) & 2047 for i in reversed(range(shift * 3))]
 
     words = [word_list[i] for i in indexes]
-    return ' '.join(words)
+    return Mnemonic(' '.join(words))
 
 
 def generate(entropy: Entropy, seed_password: str = '') -> Tuple[Mnemonic, Seed]:
@@ -212,11 +223,11 @@ def generate(entropy: Entropy, seed_password: str = '') -> Tuple[Mnemonic, Seed]
     Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
     (empty string) by default.
     :raises ValueError: on invalid parameters
-    :rtype: Tuple[str, bytes]
+    :rtype: Tuple[Mnemonic, Seed]
     :return: Two item tuple where first is mnemonic phrase and second is seed.
     """
     mnemonic = _entropy2mnemonic(entropy)
-    seed = _generate_seed(mnemonic, seed_password)
+    seed = mnemonic.toSeed(seed_password)
     return mnemonic, seed
 
 
@@ -225,11 +236,11 @@ def recover(mnemonic: Mnemonic, seed_password: str = '') -> Tuple[Entropy, Seed]
     Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
     (empty string) by default.
     :raises ValueError: on invalid parameters
-    :rtype: Tuple[bytes, bytes]
+    :rtype: Tuple[Entropy, Seed]
     :return: Two item tuple where first is initial entropy and second is seed.
     """
-    entropy = mnemonic._entropy
-    seed = _generate_seed(mnemonic, seed_password)
+    entropy = mnemonic.toEntropy()
+    seed = mnemonic.toSeed(seed_password)
     return entropy, seed
 
 
@@ -241,8 +252,8 @@ def verify(mnemonic: Mnemonic, expected_seed: Seed, seed_password: str = '') -> 
     :rtype: bool
     :return: True if provided phrase generates expected seed, False otherwise.
     """
-    generated_seed = _generate_seed(mnemonic, seed_password)
-    return _secure_seed_compare(expected_seed, generated_seed)
+    generated_seed = mnemonic.toSeed(seed_password)
+    return expected_seed == generated_seed
 
 
 def do_some_work(param: int) -> bool:
