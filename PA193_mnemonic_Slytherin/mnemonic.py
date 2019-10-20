@@ -29,7 +29,7 @@ class dictionaryAccess:
     """Abstract class for classes requiring dictionary access
     """
     
-    def __init__(self):
+    def __init__(self, file_path: str = ENGLISH_DICTIONARY_PATH ):
         # TODO: functions __entropy2mnemonic, __mnemonic2entropy, __is_valid_mnemonic work with dictionary, we could use single
         #       object with this dictionary to prevent multiple file opening and reading and to support multiple dictionaries
         #       for various languages.
@@ -41,11 +41,11 @@ class dictionaryAccess:
         :rtype: Tuple[List[str], Dict[str, int]]
         :return: List and dictionary of words
         """
-        self.__dict_list = []
+        self._dict_list = []
         with open(file_path, 'r') as f:
             for i in range(2048):
-                self.__dict_list.append(next(f).strip())
-                if len(self.__dict_list[-1]) > 16 or len(self.__dict_list[-1].split()) != 1:
+                self._dict_list.append(next(f).strip())
+                if len(self._dict_list[-1]) > 16 or len(self._dict_list[-1].split()) != 1:
                     raise ValueError('invalid dictionary')
             try:
                 next(f)
@@ -54,7 +54,7 @@ class dictionaryAccess:
             else:
                 raise ValueError('invalid dictionary')
 
-        self.__dict_dict = {self.__dict_list[i]: i for i in range(len(self.__dict_list))}
+        self._dict_dict = {self._dict_list[i]: i for i in range(len(self._dict_list))}
 
 
 class Seed(bytes):
@@ -86,7 +86,7 @@ class Seed(bytes):
         #
         # Type and length of seeds is known to the attacker, but not the value of expected seed.
         if not isinstance(other, Seed):
-            return NotImplemented
+            return False
         return hmac.compare_digest(self, other)
 
 
@@ -112,6 +112,8 @@ class Entropy(bytes, dictionaryAccess):
         > https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
         :raises ValueError: on invalid parameters
         """
+        dictionaryAccess.__init__(self)
+
         if len(entropy) not in list(range(16, 32+1, 4)):
             raise ValueError('Cannot instantiate entropy')
         self.__repr__ = entropy
@@ -145,7 +147,7 @@ class Entropy(bytes, dictionaryAccess):
         # List of indexes, number of which is MS = (ENT + CS) / 11 == shift * 3
         indexes = [(indexes_bin >> i * 11) & 2047 for i in reversed(range(shift * 3))]
 
-        words = [self.__dict_list[i] for i in indexes]
+        words = [self._dict_list[i] for i in indexes]
         return Mnemonic(' '.join(words))
 
 
@@ -157,6 +159,8 @@ class Mnemonic(str, dictionaryAccess):
         """Convert mnemonic phrase to entropy using dictionary to ensure its validity.
         :raises ValueError: on invalid parameters
         """
+        dictionaryAccess.__init__(self)
+
         if not isinstance(mnemonic, str):
             raise ValueError('Cannot instantiate mnemonic')
     
@@ -166,7 +170,7 @@ class Mnemonic(str, dictionaryAccess):
             raise ValueError('Cannot instantiate mnemonic')
 
         try:
-            indexes = [self.__dict_dict[word] for word in words]
+            indexes = [self._dict_dict[word] for word in words]
         except KeyError:
             raise ValueError('Cannot instantiate mnemonic')
 
@@ -184,8 +188,7 @@ class Mnemonic(str, dictionaryAccess):
         # Check correctness
         if checksum != self.__entropy.checksum(shift):
             raise ValueError('Cannot instantiate mnemonic')
-        
-        self.__repr__ = mnemonic
+        str.__init__(self, mnemonic)
 
 
     def toSeed(self, seed_password: str = '') -> Seed:
