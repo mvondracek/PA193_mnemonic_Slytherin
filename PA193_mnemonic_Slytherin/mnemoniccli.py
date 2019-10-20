@@ -77,133 +77,6 @@ def cli_entry_point():
         sys.exit(exit_code.value)
 
 
-def main(argv) -> ExitCode:
-    # TODO check for errors related to file IO
-    logging.captureWarnings(True)
-    warnings.simplefilter('always', ResourceWarning)
-
-    config = Config.parse_args(argv[1:])  # argv[0] is program name
-    # On error with parsing argument, program was terminated by `Config.parse_args` with exit code 2 corresponding to
-    # `ExitCode.ARGUMENTS`. If arguments contained -h/--help or -V/--version, program was terminated wtih exit code 0,
-    # which corresponds to `ExitCode.E_OK`
-    if config.logging_level:
-        logging.basicConfig(format='%(asctime)s %(name)s[%(process)d] %(levelname)s %(message)s',
-                            level=config.logging_level)
-    else:
-        logging.disable(logging.CRITICAL)
-    logger.debug('Config parsed from args.')
-
-    read_mode = 'rb' if config.format is Config.Format.BINARY else 'r'
-    write_mode = 'wb' if config.format is Config.Format.BINARY else 'w'
-    # region # TODO What types of errors/exceptions can happen here?
-    if config.generate:
-        # TODO Check file size before reading?
-        try:
-            with open(config.entropy_filepath, read_mode) as file:
-                entropy = file.read()  # type: typing.Union[bytes, str]
-        except FileNotFoundError as e:
-            logger.critical(str(e))
-            print(str(e), file=sys.stderr)
-            return ExitCode.EX_NOINPUT
-        if config.format is Config.Format.TEXT_HEXADECIMAL:
-            entropy = unhexlify(entropy)  # type: bytes
-        if not is_valid_entropy(entropy):
-            msg = 'invalid entropy'
-            logger.critical(msg)
-            print(msg, file=sys.stderr)
-            return ExitCode.EX_DATAERR
-            # TODO We could use EAFP instead of LBYL here, as `generate` Raises: ValueError – on invalid parameters
-            # or we could use class for entropy, mnemonic, and seed which would validate inputs on instantiation and
-            # raise exceptions.
-        mnemonic, seed = generate(entropy, config.password)
-        with open(config.mnemonic_filepath, 'w') as file:
-            file.write(mnemonic)
-        logger.info('Mnemonic written to {}.'.format(config.mnemonic_filepath))
-        with open(config.seed_filepath, write_mode) as file:
-            if config.format is Config.Format.TEXT_HEXADECIMAL:
-                seed = hexlify(seed)
-            file.write(seed)
-        logger.info('Seed written to {}.'.format(config.seed_filepath))
-        print('[DONE] Generate, mnemonic in {}, seed in {}.'.format(config.mnemonic_filepath, config.seed_filepath))
-    elif config.recover:
-        # TODO Check file size before reading?
-        try:
-            with open(config.mnemonic_filepath, 'r') as file:
-                mnemonic = file.read()  # type: str
-        except FileNotFoundError as e:
-            logger.critical(str(e))
-            print(str(e), file=sys.stderr)
-            return ExitCode.EX_NOINPUT
-        if not is_valid_mnemonic(mnemonic):
-            msg = 'invalid mnemonic'
-            logger.critical(msg)
-            print(msg, file=sys.stderr)
-            return ExitCode.EX_DATAERR
-            # TODO We could use EAFP instead of LBYL here, as `recover` Raises: ValueError – on invalid parameters
-            # or we could use class for entropy, mnemonic, and seed which would validate inputs on instantiation and
-            # raise exceptions.
-        entropy, seed = recover(mnemonic, config.password)
-        with open(config.entropy_filepath, write_mode) as file:
-            if config.format is Config.Format.TEXT_HEXADECIMAL:
-                entropy = hexlify(entropy)
-            file.write(entropy)
-        logger.info('Entropy written to {}.'.format(config.entropy_filepath))
-        with open(config.seed_filepath, write_mode) as file:
-            if config.format is Config.Format.TEXT_HEXADECIMAL:
-                seed = hexlify(seed)
-            file.write(seed)
-        logger.info('Seed written to {}.'.format(config.seed_filepath))
-        print('[DONE] Recover, entropy in {}, seed in {}.'.format(config.entropy_filepath, config.seed_filepath))
-    elif config.verify:
-        # TODO Check file size before reading?
-        try:
-            with open(config.mnemonic_filepath, 'r') as file:
-                mnemonic = file.read()  # type: str
-        except FileNotFoundError as e:
-            logger.critical(str(e))
-            print(str(e), file=sys.stderr)
-            return ExitCode.EX_NOINPUT
-        if not is_valid_mnemonic(mnemonic):
-            msg = 'invalid mnemonic'
-            logger.critical(msg)
-            print(msg, file=sys.stderr)
-            return ExitCode.EX_DATAERR
-            # TODO We could use EAFP instead of LBYL here, as `recover` Raises: ValueError – on invalid parameters
-            # or we could use class for entropy, mnemonic, and seed which would validate inputs on instantiation and
-            # raise exceptions.
-        # TODO Check file size before reading?
-        try:
-            with open(config.seed_filepath, read_mode) as file:
-                seed = file.read()  # type: typing.Union[bytes, str]
-        except FileNotFoundError as e:
-            logger.critical(str(e))
-            print(str(e), file=sys.stderr)
-            return ExitCode.EX_NOINPUT
-        if config.format is Config.Format.TEXT_HEXADECIMAL:
-            seed = unhexlify(seed)  # type: bytes
-        if not is_valid_seed(seed):
-            msg = 'invalid seed'
-            logger.critical(msg)
-            print(msg, file=sys.stderr)
-            return ExitCode.EX_DATAERR
-            # TODO We could use EAFP instead of LBYL here, as `verify` Raises: ValueError – on invalid parameters
-            # or we could use class for entropy, mnemonic, and seed which would validate inputs on instantiation and
-            # raise exceptions.
-        match = verify(mnemonic, seed, config.password)
-        if not match:
-            msg = 'Seeds do not match.'
-            logger.info(msg)
-            print(msg, file=sys.stderr)
-            return ExitCode.SEEDS_DO_NOT_MATCH
-        msg = 'Seeds match.'
-        logger.info(msg)
-        print(msg)
-    # endregion
-
-    logger.debug('exit code: {} {}'.format(ExitCode.EX_OK.name, ExitCode.EX_OK.value))
-    return ExitCode.EX_OK
-
-
 class Config(object):
     @unique
     class Format(Enum):
@@ -342,6 +215,155 @@ class Config(object):
             verify_=parsed_args.verify,
         )
         return config
+
+
+
+
+def action_generate(config: Config) -> ExitCode:
+    read_mode = 'rb' if config.format is Config.Format.BINARY else 'r'
+    write_mode = 'wb' if config.format is Config.Format.BINARY else 'w'
+    # TODO Check file size before reading?
+    try:
+        with open(config.entropy_filepath, read_mode) as file:
+            entropy = file.read()  # type: typing.Union[bytes, str]
+    except FileNotFoundError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return ExitCode.EX_NOINPUT
+    if config.format is Config.Format.TEXT_HEXADECIMAL:
+        entropy = unhexlify(entropy)  # type: bytes
+    if not is_valid_entropy(entropy):
+        msg = 'invalid entropy'
+        logger.critical(msg)
+        print(msg, file=sys.stderr)
+        return ExitCode.EX_DATAERR
+        # TODO We could use EAFP instead of LBYL here, as `generate` Raises: ValueError – on invalid parameters
+        # or we could use class for entropy, mnemonic, and seed which would validate inputs on instantiation and
+        # raise exceptions.
+    mnemonic, seed = generate(entropy, config.password)
+    with open(config.mnemonic_filepath, 'w') as file:
+        file.write(mnemonic)
+    logger.info('Mnemonic written to {}.'.format(config.mnemonic_filepath))
+    with open(config.seed_filepath, write_mode) as file:
+        if config.format is Config.Format.TEXT_HEXADECIMAL:
+            seed = hexlify(seed)
+        file.write(seed)
+    logger.info('Seed written to {}.'.format(config.seed_filepath))
+    print('[DONE] Generate, mnemonic in {}, seed in {}.'.format(config.mnemonic_filepath, config.seed_filepath))
+    return ExitCode.EX_OK
+
+
+def action_recover(config: Config) -> ExitCode:
+    read_mode = 'rb' if config.format is Config.Format.BINARY else 'r'
+    write_mode = 'wb' if config.format is Config.Format.BINARY else 'w'
+    # TODO Check file size before reading?
+    try:
+        with open(config.mnemonic_filepath, 'r') as file:
+            mnemonic = file.read()  # type: str
+    except FileNotFoundError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return ExitCode.EX_NOINPUT
+    if not is_valid_mnemonic(mnemonic):
+        msg = 'invalid mnemonic'
+        logger.critical(msg)
+        print(msg, file=sys.stderr)
+        return ExitCode.EX_DATAERR
+        # TODO We could use EAFP instead of LBYL here, as `recover` Raises: ValueError – on invalid parameters
+        # or we could use class for entropy, mnemonic, and seed which would validate inputs on instantiation and
+        # raise exceptions.
+    entropy, seed = recover(mnemonic, config.password)
+    with open(config.entropy_filepath, write_mode) as file:
+        if config.format is Config.Format.TEXT_HEXADECIMAL:
+            entropy = hexlify(entropy)
+        file.write(entropy)
+    logger.info('Entropy written to {}.'.format(config.entropy_filepath))
+    with open(config.seed_filepath, write_mode) as file:
+        if config.format is Config.Format.TEXT_HEXADECIMAL:
+            seed = hexlify(seed)
+        file.write(seed)
+    logger.info('Seed written to {}.'.format(config.seed_filepath))
+    print('[DONE] Recover, entropy in {}, seed in {}.'.format(config.entropy_filepath, config.seed_filepath))
+    return ExitCode.EX_OK
+
+
+def action_verify(config: Config) -> ExitCode:
+    read_mode = 'rb' if config.format is Config.Format.BINARY else 'r'
+    write_mode = 'wb' if config.format is Config.Format.BINARY else 'w'
+    # TODO Check file size before reading?
+    try:
+        with open(config.mnemonic_filepath, 'r') as file:
+            mnemonic = file.read()  # type: str
+    except FileNotFoundError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return ExitCode.EX_NOINPUT
+    if not is_valid_mnemonic(mnemonic):
+        msg = 'invalid mnemonic'
+        logger.critical(msg)
+        print(msg, file=sys.stderr)
+        return ExitCode.EX_DATAERR
+        # TODO We could use EAFP instead of LBYL here, as `recover` Raises: ValueError – on invalid parameters
+        # or we could use class for entropy, mnemonic, and seed which would validate inputs on instantiation and
+        # raise exceptions.
+    # TODO Check file size before reading?
+    try:
+        with open(config.seed_filepath, read_mode) as file:
+            seed = file.read()  # type: typing.Union[bytes, str]
+    except FileNotFoundError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return ExitCode.EX_NOINPUT
+    if config.format is Config.Format.TEXT_HEXADECIMAL:
+        seed = unhexlify(seed)  # type: bytes
+    if not is_valid_seed(seed):
+        msg = 'invalid seed'
+        logger.critical(msg)
+        print(msg, file=sys.stderr)
+        return ExitCode.EX_DATAERR
+        # TODO We could use EAFP instead of LBYL here, as `verify` Raises: ValueError – on invalid parameters
+        # or we could use class for entropy, mnemonic, and seed which would validate inputs on instantiation and
+        # raise exceptions.
+    match = verify(mnemonic, seed, config.password)
+    if not match:
+        msg = 'Seeds do not match.'
+        logger.info(msg)
+        print(msg, file=sys.stderr)
+        return ExitCode.SEEDS_DO_NOT_MATCH
+    msg = 'Seeds match.'
+    logger.info(msg)
+    print(msg)
+    return ExitCode.EX_OK
+
+
+def main(argv) -> ExitCode:
+    # TODO check for errors related to file IO
+    logging.captureWarnings(True)
+    warnings.simplefilter('always', ResourceWarning)
+
+    config = Config.parse_args(argv[1:])  # argv[0] is program name
+    # On error with parsing argument, program was terminated by `Config.parse_args` with exit code 2 corresponding to
+    # `ExitCode.ARGUMENTS`. If arguments contained -h/--help or -V/--version, program was terminated wtih exit code 0,
+    # which corresponds to `ExitCode.E_OK`
+    if config.logging_level:
+        logging.basicConfig(format='%(asctime)s %(name)s[%(process)d] %(levelname)s %(message)s',
+                            level=config.logging_level)
+    else:
+        logging.disable(logging.CRITICAL)
+    logger.debug('Config parsed from args.')
+
+    # region # TODO What types of errors/exceptions can happen here?
+    exitcode = ExitCode.EX_OK
+    if config.generate:
+        exitcode = action_generate(config)
+    elif config.recover:
+        exitcode = action_recover(config)
+    elif config.verify:
+        exitcode = action_verify(config)
+    # endregion
+
+    logger.debug('exit code: {} {}'.format(exitcode.name, exitcode.value))
+    return exitcode
 
 
 if __name__ == '__main__':
