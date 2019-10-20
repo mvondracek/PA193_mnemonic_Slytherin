@@ -12,7 +12,6 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 """
 import argparse
 import logging
-import os
 import sys
 import warnings
 from binascii import unhexlify, hexlify
@@ -99,6 +98,7 @@ def main(argv) -> ExitCode:
     # region # TODO What types of errors/exceptions can happen here?
     if config.generate:
         # TODO Check file size before reading?
+        # TODO try to open file and if it fails, termiante with EX_NOINPUT
         with open(config.entropy_filepath, read_mode) as file:
             entropy = file.read()  # type: typing.Union[bytes, str]
         if config.format is Config.Format.TEXT_HEXADECIMAL:
@@ -123,6 +123,7 @@ def main(argv) -> ExitCode:
         print('[DONE] Generate, mnemonic in {}, seed in {}.'.format(config.mnemonic_filepath, config.seed_filepath))
     elif config.recover:
         # TODO Check file size before reading?
+        # TODO try to open file and if it fails, termiante with EX_NOINPUT
         with open(config.mnemonic_filepath, 'r') as file:
             mnemonic = file.read()  # type: str
         if not is_valid_mnemonic(mnemonic):
@@ -147,6 +148,7 @@ def main(argv) -> ExitCode:
         print('[DONE] Recover, entropy in {}, seed in {}.'.format(config.entropy_filepath, config.seed_filepath))
     elif config.verify:
         # TODO Check file size before reading?
+        # TODO try to open file and if it fails, termiante with EX_NOINPUT
         with open(config.mnemonic_filepath, 'r') as file:
             mnemonic = file.read()  # type: str
         if not is_valid_mnemonic(mnemonic):
@@ -158,6 +160,7 @@ def main(argv) -> ExitCode:
             # or we could use class for entropy, mnemonic, and seed which would validate inputs on instantiation and
             # raise exceptions.
         # TODO Check file size before reading?
+        # TODO try to open file and if it fails, termiante with EX_NOINPUT
         with open(config.seed_filepath, read_mode) as file:
             seed = file.read()  # type: typing.Union[bytes, str]
         if config.format is Config.Format.TEXT_HEXADECIMAL:
@@ -300,29 +303,15 @@ class Config(object):
         # in provided args.
         parsed_args = parser.parse_args(args=args)
         # basic input file path check
-        if parsed_args.generate:
-            if not parsed_args.entropy:
-                parser.error('argument entropy is required with action `generate`'.format(parsed_args.entropy))
-            if not os.path.isfile(parsed_args.entropy):
-                # TODO do not check `isfile` here, try to open it later and if it fails, termiante with EX_NOINPUT
-                parser.error('argument entropy: input file `{}` does not exist'.format(parsed_args.entropy))
-        elif parsed_args.recover:
-            if not parsed_args.mnemonic:
-                parser.error('argument mnemonic is required with action `recover`'.format(parsed_args.entropy))
-            if not os.path.isfile(parsed_args.mnemonic):
-                # TODO do not check `isfile` here, try to open it later and if it fails, termiante with EX_NOINPUT
-                parser.error('argument mnemonic: input file `{}` does not exist'.format(parsed_args.mnemonic))
+        if parsed_args.generate and not parsed_args.entropy:
+            parser.error('argument entropy is required with action `generate`'.format(parsed_args.entropy))
+        elif parsed_args.recover and not parsed_args.mnemonic:
+            parser.error('argument mnemonic is required with action `recover`'.format(parsed_args.entropy))
         elif parsed_args.verify:
             if not parsed_args.mnemonic:
                 parser.error('argument mnemonic is required with action `verify`'.format(parsed_args.entropy))
             if not parsed_args.seed:
                 parser.error('argument seed is required with action `verify`'.format(parsed_args.entropy))
-            if not os.path.isfile(parsed_args.mnemonic):
-                # TODO do not check `isfile` here, try to open it later and if it fails, termiante with EX_NOINPUT
-                parser.error('argument mnemonic: input file `{}` does not exist'.format(parsed_args.mnemonic))
-            if not os.path.isfile(parsed_args.seed):
-                # TODO do not check `isfile` here, try to open it later and if it fails, termiante with EX_NOINPUT
-                parser.error('argument seed: input file `{}` does not exist'.format(parsed_args.seed))
 
         config = cls(
             # name to value conversion as noted in `self.init_parser`
