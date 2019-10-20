@@ -28,11 +28,8 @@ SEED_LEN = 64
 class dictionaryAccess:
     """Abstract class for classes requiring dictionary access
     """
-    
-    def __init__(self, file_path: str = ENGLISH_DICTIONARY_PATH ):
-        # TODO: functions __entropy2mnemonic, __mnemonic2entropy, __is_valid_mnemonic work with dictionary, we could use single
-        #       object with this dictionary to prevent multiple file opening and reading and to support multiple dictionaries
-        #       for various languages.
+
+    def __init__(self, file_path: str = ENGLISH_DICTIONARY_PATH):
         """Load the dictionary.
         Currently uses 1 default dictionary with English words.
         # TODO Should we support multiple dictionaries for various languages?
@@ -60,7 +57,7 @@ class dictionaryAccess:
 class Seed(bytes):
     """Class for seed representation.
     """
-    
+
     def __init__(self, seed: bytes):
         """Check whether provided bytes represent a valid seed.
         :raises ValueError: on invalid parameters
@@ -68,7 +65,6 @@ class Seed(bytes):
         if not isinstance(seed, bytes) or len(seed) != SEED_LEN:
             raise ValueError('Cannot instantiate seed')
         self = seed
-
 
     def __eq__(self, other: object) -> bool:
         """Compare seeds in constant time to prevent timing attacks.
@@ -88,7 +84,6 @@ class Seed(bytes):
         if not isinstance(other, Seed):
             return False
         return hmac.compare_digest(self, other)
-
 
     def __ne__(self, other: object) -> bool:
         """Compare seeds in constant time to prevent timing attacks.
@@ -118,7 +113,6 @@ class Entropy(bytes, dictionaryAccess):
             raise ValueError('Cannot instantiate entropy')
         self = entropy
 
-
     def checksum(self, length: int) -> int:
         """Calculate entropy checksum of set length
         :rtype: int
@@ -126,7 +120,6 @@ class Entropy(bytes, dictionaryAccess):
         """
         entropy_hash = sha256(self).digest()
         return int.from_bytes(entropy_hash, byteorder='big') >> 256 - length
-
 
     def toMnemonic(self) -> 'Mnemonic':
         """Convert entropy to mnemonic phrase using dictionary.
@@ -154,7 +147,7 @@ class Entropy(bytes, dictionaryAccess):
 class Mnemonic(str, dictionaryAccess):
     """Class for mnemonic representation.
     """
-    
+
     def __init__(self, mnemonic: str):
         """Convert mnemonic phrase to entropy using dictionary to ensure its validity.
         :raises ValueError: on invalid parameters
@@ -163,10 +156,10 @@ class Mnemonic(str, dictionaryAccess):
 
         if not isinstance(mnemonic, str):
             raise ValueError('Cannot instantiate mnemonic')
-    
+
         words = mnemonic.split()
-        l = len(words)
-        if not l in (12, 15, 18, 21, 24):
+        n_words = len(words)
+        if n_words not in (12, 15, 18, 21, 24):
             raise ValueError('Cannot instantiate mnemonic')
 
         try:
@@ -174,22 +167,21 @@ class Mnemonic(str, dictionaryAccess):
         except KeyError:
             raise ValueError('Cannot instantiate mnemonic')
 
-        # Concatenate indexes into single 
-        indexes_bin = sum([indexes[-i - 1] << i * 11 for i in reversed(range(l))])
+        # Concatenate indexes into single variable
+        indexes_bin = sum([indexes[-i - 1] << i * 11 for i in reversed(range(n_words))])
 
         # Number of bits entropy is shifted by
-        shift = l * 11 // 32
+        shift = n_words * 11 // 32
 
         checksum = indexes_bin & (pow(2, shift) - 1)
-        entropy_bin =  indexes_bin >> shift
-        entropy = entropy_bin.to_bytes((l * 11 - shift) // 8, byteorder='big')
-    
+        entropy_bin = indexes_bin >> shift
+        entropy = entropy_bin.to_bytes((n_words * 11 - shift) // 8, byteorder='big')
+
         self.__entropy = Entropy(entropy)
         # Check correctness
         if checksum != self.__entropy.checksum(shift):
             raise ValueError('Cannot instantiate mnemonic')
         self = mnemonic
-
 
     def toSeed(self, seed_password: str = '') -> Seed:
         """Generate seed from the mnemonic phrase.
@@ -203,7 +195,6 @@ class Mnemonic(str, dictionaryAccess):
         passphrase = "mnemonic" + seed_password
         passphrase = passphrase.encode()
         return Seed(pbkdf2_hmac('sha512', mnemonic, passphrase, PBKDF2_ROUNDS, SEED_LEN))
-
 
     def toEntropy(self) -> Entropy:
         """Generate entropy from the mnemonic phrase.

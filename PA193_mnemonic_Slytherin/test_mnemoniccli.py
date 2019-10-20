@@ -73,7 +73,6 @@ class TestMain(unittest.TestCase):
             self.assert_cli_error([self.PYTHON, self.SCRIPT, '-v', '-m', non_existing_filepath, '-s', f.name],
                                   ExitCode.EX_NOINPUT)
 
-
     def test_invalid_entropy(self):
         """Invalid input file with entropy
         > The mnemonic must encode entropy in a multiple of 32 bits. With more entropy security is improved but
