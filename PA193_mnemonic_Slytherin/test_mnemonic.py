@@ -18,6 +18,7 @@ from PA193_mnemonic_Slytherin.mnemonic import generate, recover, verify
 
 
 class TestMnemonicInternal(TestCase):
+    @unittest.skip("Skipping until we switcheed tests to class representation.")
     def test_secure_seed_compare(self):
         seed = b'\x27\x4d\xdc\x52\x58\x02\xf7\xc8\x28\xd8\xef\x7d\xdb\xcd\xc5' \
                b'\x30\x4e\x87\xac\x35\x35\x91\x36\x11\xfb\xbf\xa9\x86\xd0\xc9' \
