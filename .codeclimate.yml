@@ -1,0 +1,19 @@
+version: "2"
+plugins:
+  pep8:
+    enabled: true
+  bandit:
+    enabled: true
+  fixme:
+    enabled: true
+  markdownlint:
+    enabled: true
+  radon:
+    enabled: true
+  sonar-python:
+    enabled: true
+    config:
+      tests_patterns:
+        - PA193_mnemonic_Slytherin/test_*
+      # Possible values are: info, minor, major (default), critical, blocker
+      minimum_severity: major
