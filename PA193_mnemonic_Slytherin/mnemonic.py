@@ -164,12 +164,3 @@ def verify(mnemonic: str, expected_seed: bytes, seed_password: str = '') -> bool
 
     generated_seed = _generate_seed(mnemonic, seed_password)
     return _secure_seed_compare(expected_seed, generated_seed)
-
-
-def do_some_work(param: int) -> bool:
-    """Placeholder for initial code structure.
-    :rtype: bool
-    :return True if some work was successful, False otherwise.
-    # TODO remove this placeholder as soon as we have some real tests.
-    """
-    return param == 1

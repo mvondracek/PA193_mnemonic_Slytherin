@@ -13,19 +13,9 @@ import unittest
 from binascii import unhexlify
 from unittest import TestCase
 
-from PA193_mnemonic_Slytherin.mnemonic import do_some_work
 from PA193_mnemonic_Slytherin.mnemonic import _generate_seed, _secure_seed_compare
 
 from PA193_mnemonic_Slytherin.mnemonic import generate, recover, verify
-
-
-class TestDoSomeWork(TestCase):
-    """Placeholder for initial code structure."""
-
-    def test_do_some_work(self):
-        """Placeholder for initial code structure."""
-        self.assertTrue(do_some_work(1))
-        self.assertFalse(do_some_work(123))
 
 
 class TestMnemonicInternal(TestCase):
