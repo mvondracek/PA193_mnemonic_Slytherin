@@ -74,7 +74,6 @@ class TestMain(unittest.TestCase):
                                   ExitCode.EX_NOINPUT)
 
 
-    @unittest.skip("Skipping until we switcheed tests to class representation.")
     def test_invalid_entropy(self):
         """Invalid input file with entropy
         > The mnemonic must encode entropy in a multiple of 32 bits. With more entropy security is improved but
