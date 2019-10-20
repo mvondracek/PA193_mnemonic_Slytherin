@@ -13,7 +13,6 @@ import unittest
 from binascii import unhexlify
 from unittest import TestCase
 
-from PA193_mnemonic_Slytherin.mnemonic import do_some_work
 from PA193_mnemonic_Slytherin.mnemonic import _generate_seed, _secure_seed_compare
 
 from PA193_mnemonic_Slytherin.mnemonic import generate, recover, verify

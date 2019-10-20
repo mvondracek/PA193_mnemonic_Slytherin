@@ -9,6 +9,5 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 
 2019
 """
-from .mnemonic import do_some_work
 from .mnemonic import generate, recover, verify
 from .mnemonic import is_valid_entropy, is_valid_mnemonic, is_valid_seed
