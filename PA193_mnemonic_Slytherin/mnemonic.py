@@ -43,13 +43,13 @@ class dictionaryAccess:
             for i in range(2048):
                 self._dict_list.append(next(f).strip())
                 if len(self._dict_list[-1]) > 16 or len(self._dict_list[-1].split()) != 1:
-                    raise ValueError('invalid dictionary')
+                    raise ValueError('Cannot instantiate dictionary')
             try:
                 next(f)
             except StopIteration:
                 pass
             else:
-                raise ValueError('invalid dictionary')
+                raise ValueError('Cannot instantiate dictionary')
 
         self._dict_dict = {self._dict_list[i]: i for i in range(len(self._dict_list))}
 

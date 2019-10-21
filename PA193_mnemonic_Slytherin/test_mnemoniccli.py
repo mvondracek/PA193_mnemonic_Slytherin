@@ -93,5 +93,5 @@ class TestMain(unittest.TestCase):
                         f.write(entropy_byte * entropy_bytes_length)
                     cli = self.execute_cli([self.PYTHON, self.SCRIPT, '-g', '-e', f.name, '--format', 'bin'])
                     self.assertEqual('', cli.stdout)
-                    self.assertEqual('invalid entropy\n', cli.stderr)
+                    self.assertEqual('Cannot instantiate entropy\n', cli.stderr)
                     self.assertEqual(ExitCode.EX_DATAERR.value, cli.returncode)
