@@ -11,145 +11,233 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 """
 import hmac
 import logging
-from typing import Tuple
-from hashlib import pbkdf2_hmac
+import os
+from hashlib import pbkdf2_hmac, sha256
+from typing import Dict, List, Tuple
 
 __author__ = 'Team Slytherin: @sobuch, @lsolodkova, @mvondracek.'
 
 logger = logging.getLogger(__name__)
 
+
+ENGLISH_DICTIONARY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'english.txt')
 PBKDF2_ROUNDS = 2048
 SEED_LEN = 64
 
 
-def _generate_seed(mnemonic: str, seed_password: str = '') -> bytes:
-    """Generate seed from provided mnemonic phrase.
-    Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
-    (empty string) by default.
-    :rtype: bytes
-    :return: Seed
+class dictionaryAccess:
+    """Abstract class for classes requiring dictionary access
     """
-    # the encoding of both inputs should be UTF-8 NFKD
-    mnemonic = mnemonic.encode()  # encoding string into bytes, UTF-8 by default
-    passphrase = "mnemonic" + seed_password
-    passphrase = passphrase.encode()
-    return pbkdf2_hmac('sha512', mnemonic, passphrase, PBKDF2_ROUNDS, SEED_LEN)
+
+    def __init__(self, file_path: str = ENGLISH_DICTIONARY_PATH):
+        """Load the dictionary.
+        Currently uses 1 default dictionary with English words.
+        # TODO Should we support multiple dictionaries for various languages?
+        :raises FileNotFoundError: on missing file
+        :raises ValueError: on invalid dictionary
+        :rtype: Tuple[List[str], Dict[str, int]]
+        :return: List and dictionary of words
+        """
+        self._dict_list = []
+        self._dict_dict = {}
+        with open(file_path, 'r') as f:
+            for i in range(2048):
+                line = next(f).strip()
+                if len(line) > 16 or len(line.split()) != 1:
+                    raise ValueError('Cannot instantiate dictionary')
+                self._dict_list.append(line)
+                self._dict_dict[line] = i
+            if f.read():
+                raise ValueError('Cannot instantiate dictionary')
 
 
-# TODO: functions __entropy2mnemonic, __mnemonic2entropy, __is_valid_mnemonic work with dictionary, we could use single
-#       object with this dictionary to prevent multiple file opening and reading and to support multiple dictionaries
-#       for various languages.
-
-# TODO Possible problem with dictionary:
-# - file not found
-# - no permissions for file
-# - dictionary does not contain exactly 2048 lines
-# - dictionary is too big (2048 lines OK, but too long words) like hundreds of MB...
-# - every line has exactly 1 word (no whitespaces)
-
-def __entropy2mnemonic(entropy: bytes) -> str:
-    """Convert entropy to mnemonic phrase using dictionary.
-    Currently uses 1 default dictionary with English words.
-    # TODO Should we support multiple dictionaries for various languages?
-    :rtype: str
-    :return: Mnemonic phrase
+class Seed(bytes):
+    """Class for seed representation.
     """
-    pass
+
+    def __init__(self, seed: bytes):
+        """Check whether provided bytes represent a valid seed.
+        :raises ValueError: on invalid parameters
+        """
+        if not isinstance(seed, bytes) or len(seed) != SEED_LEN:
+            raise ValueError('Cannot instantiate seed')
+        self = seed
+
+    def __eq__(self, other: object) -> bool:
+        """Compare seeds in constant time to prevent timing attacks.
+        :rtype: bool
+        :return: True if seeds are the same, False otherwise.
+        """
+        # > hmac.compare_digest` uses an approach designed to prevent timing
+        # > analysis by avoiding content-based short circuiting behaviour, making
+        #  > it appropriate for cryptography
+        # > https://docs.python.org/3.7/library/hmac.html#hmac.compare_digest
+        #
+        # > Note: If a and b are of different lengths, or if an error occurs,
+        # > a timing attack could theoretically reveal information about the types
+        #  > and lengths of a and b—but not their values.
+        #
+        # Type and length of seeds is known to the attacker, but not the value of expected seed.
+        if not isinstance(other, Seed):
+            return False
+        return hmac.compare_digest(self, other)
+
+    def __ne__(self, other: object) -> bool:
+        """Compare seeds in constant time to prevent timing attacks.
+        :rtype: bool
+        :return: False if seeds are the same, True otherwise.
+        """
+        return not (self == other)
 
 
-def __mnemonic2entropy(mnemonic: str) -> bytes:
-    """Convert mnemonic phrase to entropy using dictionary.
-    Currently uses 1 default dictionary with English words.
-    # TODO Should we support multiple dictionaries for various languages?
-    :rtype: bytes
-    :return: Entropy
+class Entropy(bytes, dictionaryAccess):
+    """Class for entropy representation.
     """
-    pass
+
+    def __init__(self, entropy: bytes):
+        """Check whether provided bytes represent a valid entropy according to BIP39.
+        https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
+
+        > The mnemonic must encode entropy in a multiple of 32 bits. With more entropy security is
+        > improved but the sentence length increases. We refer to the initial entropy length as ENT.
+        > The allowed size of ENT is 128-256 bits.
+        > https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
+        :raises ValueError: on invalid parameters
+        """
+        dictionaryAccess.__init__(self)
+
+        if len(entropy) not in list(range(16, 32+1, 4)):
+            raise ValueError('Cannot instantiate entropy')
+        self = entropy
+
+    def checksum(self, length: int) -> int:
+        """Calculate entropy checksum of set length
+        :rtype: int
+        :return: checksum
+        """
+        entropy_hash = sha256(self).digest()
+        return int.from_bytes(entropy_hash, byteorder='big') >> 256 - length
+
+    def toMnemonic(self) -> 'Mnemonic':
+        """Convert entropy to mnemonic phrase using dictionary.
+        :rtype: Mnemonic
+        :return: Mnemonic phrase
+
+        > https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
+        'Checksum is computed using first ENT/32 bits of SHA256 hash. Concatenated bits are split
+        into groups of 11 bits, each encoding a number from 0-2047, serving as an index into a
+        wordlist.'
+        """
+        shift = len(self) // 4
+        checksum = self.checksum(shift)
+
+        # Concatenated bits representing the indexes
+        indexes_bin = (int.from_bytes(self, byteorder='big') << shift) | checksum
+
+        # List of indexes, number of which is MS = (ENT + CS) / 11 == shift * 3
+        indexes = [(indexes_bin >> i * 11) & 2047 for i in reversed(range(shift * 3))]
+
+        words = [self._dict_list[i] for i in indexes]
+        return Mnemonic(' '.join(words))
 
 
-def is_valid_entropy(entropy: bytes) -> bool:
-    """Check whether provided bytes represent a valid entropy according to BIP39.
-    https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
-
-    > The mnemonic must encode entropy in a multiple of 32 bits. With more entropy security is
-    > improved but the sentence length increases. We refer to the initial entropy length as ENT.
-    > The allowed size of ENT is 128-256 bits.
-    > https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
+class Mnemonic(str, dictionaryAccess):
+    """Class for mnemonic representation.
     """
-    return len(entropy) in list(range(16, 32+1, 4))
+
+    def __init__(self, mnemonic: str):
+        """Convert mnemonic phrase to entropy using dictionary to ensure its validity.
+        :raises ValueError: on invalid parameters
+        """
+        dictionaryAccess.__init__(self)
+
+        if not isinstance(mnemonic, str):
+            raise ValueError('Cannot instantiate mnemonic')
+
+        words = mnemonic.split()
+        n_words = len(words)
+        if n_words not in (12, 15, 18, 21, 24):
+            raise ValueError('Cannot instantiate mnemonic')
+
+        try:
+            indexes = [self._dict_dict[word] for word in words]
+        except KeyError:
+            raise ValueError('Cannot instantiate mnemonic')
+
+        # Concatenate indexes into single variable
+        indexes_bin = sum([indexes[-i - 1] << i * 11 for i in reversed(range(n_words))])
+
+        # Number of bits entropy is shifted by
+        shift = n_words * 11 // 32
+
+        checksum = indexes_bin & (pow(2, shift) - 1)
+        entropy_bin = indexes_bin >> shift
+        entropy = entropy_bin.to_bytes((n_words * 11 - shift) // 8, byteorder='big')
+
+        self.__entropy = Entropy(entropy)
+        # Check correctness
+        if checksum != self.__entropy.checksum(shift):
+            raise ValueError('Cannot instantiate mnemonic')
+        self = mnemonic
+
+    def toSeed(self, seed_password: str = '') -> Seed:
+        """Generate seed from the mnemonic phrase.
+        Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
+        (empty string) by default.
+        :rtype: Seed
+        :return: Seed
+        """
+        # the encoding of both inputs should be UTF-8 NFKD
+        mnemonic = self.encode()  # encoding string into bytes, UTF-8 by default
+        passphrase = "mnemonic" + seed_password
+        passphrase = passphrase.encode()
+        return Seed(pbkdf2_hmac('sha512', mnemonic, passphrase, PBKDF2_ROUNDS, SEED_LEN))
+
+    def toEntropy(self) -> Entropy:
+        """Generate entropy from the mnemonic phrase.
+        :rtype: Entropy
+        :return: entropy
+        """
+        return self.__entropy
 
 
-def is_valid_mnemonic(mnemonic: str) -> bool:
-    """Check whether provided string represents a valid mnemonic phrase based on current dictionary.
-    Currently uses 1 default dictionary with English words.
-    # TODO Should we support multiple dictionaries for various languages?
-    """
-    raise NotImplementedError()
-
-
-def is_valid_seed(seed: bytes) -> bool:
-    """Check whether provided bytes represent a valid seed.
-    """
-    return isinstance(seed, bytes) and len(seed) == SEED_LEN
-
-
-def _secure_seed_compare(expected_seed: bytes, actual_seed: bytes) -> bool:
-    """Compare provided seeds in constant time to prevent timing attacks.
-    :raises TypeError: if parameters are not bytes-like objects
-    :rtype: bool
-    :return: True if seeds are the same, False otherwise.
-    """
-    # > hmac.compare_digest` uses an approach designed to prevent timing
-    # > analysis by avoiding content-based short circuiting behaviour, making
-    #  > it appropriate for cryptography
-    # > https://docs.python.org/3.7/library/hmac.html#hmac.compare_digest
-    #
-    # > Note: If a and b are of different lengths, or if an error occurs,
-    # > a timing attack could theoretically reveal information about the types
-    #  > and lengths of a and b—but not their values.
-    #
-    # Type and length of seeds is known to the attacker, but not the value of expected seed.
-    if not (isinstance(expected_seed, bytes) and isinstance(actual_seed, bytes)):
-        # Function `hmac.compare_digest` accepts strings & bytes and raises TypeError
-        # for other types. It would accept two strings, but we accept only two
-        # bytes-like objects, therefore we raise TypeError here.
-        raise TypeError('a bytes-like object is required')
-    return hmac.compare_digest(expected_seed, actual_seed)
-
-
-def generate(entropy: bytes, seed_password: str = '') -> Tuple[str, bytes]:
+def generate(entropy: Entropy, seed_password: str = '') -> Tuple[Mnemonic, Seed]:
     """Generate mnemonic phrase and seed based on provided entropy.
     Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
     (empty string) by default.
     :raises ValueError: on invalid parameters
-    :rtype: Tuple[str, bytes]
+    :rtype: Tuple[Mnemonic, Seed]
     :return: Two item tuple where first is mnemonic phrase and second is seed.
     """
-    if not is_valid_entropy(entropy):
-        raise ValueError('invalid entropy')
+    if not isinstance(entropy, Entropy):
+        raise TypeError('Expected Entropy, got {}'.format(type(entropy)))
+    if not isinstance(seed_password, str):
+        raise TypeError('Expected str, got {}'.format(type(seed_password)))
 
-    mnemonic = __entropy2mnemonic(entropy)
-    seed = _generate_seed(mnemonic, seed_password)
+    mnemonic = entropy.toMnemonic()
+    seed = mnemonic.toSeed(seed_password)
     return mnemonic, seed
 
 
-def recover(mnemonic: str, seed_password: str = '') -> Tuple[bytes, bytes]:
+def recover(mnemonic: Mnemonic, seed_password: str = '') -> Tuple[Entropy, Seed]:
     """ Recover initial entropy and seed from provided mnemonic phrase.
     Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
     (empty string) by default.
     :raises ValueError: on invalid parameters
-    :rtype: Tuple[bytes, bytes]
+    :rtype: Tuple[Entropy, Seed]
     :return: Two item tuple where first is initial entropy and second is seed.
     """
-    if not is_valid_mnemonic(mnemonic):
-        raise ValueError('invalid mnemonic')
+    if not isinstance(mnemonic, Mnemonic):
+        raise TypeError('Expected Mnemonic, got {}'.format(type(mnemonic)))
+    if not isinstance(seed_password, str):
+        raise TypeError('Expected str, got {}'.format(type(seed_password)))
 
-    entropy = __mnemonic2entropy(mnemonic)
-    seed = _generate_seed(mnemonic, seed_password)
+    entropy = mnemonic.toEntropy()
+    seed = mnemonic.toSeed(seed_password)
     return entropy, seed
 
 
-def verify(mnemonic: str, expected_seed: bytes, seed_password: str = '') -> bool:
+def verify(mnemonic: Mnemonic, expected_seed: Seed, seed_password: str = '') -> bool:
     """Verify whether mnemonic phrase matches with expected seed.
     Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
     (empty string) by default.
@@ -157,10 +245,12 @@ def verify(mnemonic: str, expected_seed: bytes, seed_password: str = '') -> bool
     :rtype: bool
     :return: True if provided phrase generates expected seed, False otherwise.
     """
-    if not is_valid_mnemonic(mnemonic):
-        raise ValueError('invalid mnemonic')
-    if not is_valid_seed(expected_seed):
-        raise ValueError('invalid expected_seed')
+    if not isinstance(expected_seed, Seed):
+        raise TypeError('Expected Seed, got {}'.format(type(expected_seed)))
+    if not isinstance(mnemonic, Mnemonic):
+        raise TypeError('Expected Mnemonic, got {}'.format(type(mnemonic)))
+    if not isinstance(seed_password, str):
+        raise TypeError('Expected str, got {}'.format(type(seed_password)))
 
-    generated_seed = _generate_seed(mnemonic, seed_password)
-    return _secure_seed_compare(expected_seed, generated_seed)
+    generated_seed = mnemonic.toSeed(seed_password)
+    return expected_seed == generated_seed
