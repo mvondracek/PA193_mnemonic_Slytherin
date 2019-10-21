@@ -29,24 +29,6 @@ __author__ = 'Team Slytherin: @sobuch, @lsolodkova, @mvondracek.'
 logger = logging.getLogger(__name__)
 
 
-def handle_exception(func):
-    """Wrap the execution and catch and log all the exceptions.
-    """
-    def wrapper_handle_exception(self, *args, **kwargs):
-        """The function wrapper."""
-        try:
-            return func(self, *args, **kwargs)
-        except FileNotFoundError as e:
-            logger.critical(str(e))
-            print(str(e), file=sys.stderr)
-            return ExitCode.EX_NOINPUT
-        except ValueError as e:
-            logger.critical(str(e))
-            print(str(e), file=sys.stderr)
-            return ExitCode.EX_DATAERR
-    return wrapper_handle_exception
-
-
 @unique
 class ExitCode(Enum):
     """
@@ -236,16 +218,25 @@ def cli_entry_point():
         sys.exit(exit_code.value)
 
 
-@handle_exception
 def action_generate(config: Config) -> ExitCode:
     read_mode = 'rb' if config.format is Config.Format.BINARY else 'r'
     write_mode = 'wb' if config.format is Config.Format.BINARY else 'w'
     # TODO Check file size before reading?
-    with open(config.entropy_filepath, read_mode) as file:
-        entropy = file.read()  # type: typing.Union[bytes, str]
+    try:
+        with open(config.entropy_filepath, read_mode) as file:
+            entropy = file.read()  # type: typing.Union[bytes, str]
+    except FileNotFoundError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return ExitCode.EX_NOINPUT
     if config.format is Config.Format.TEXT_HEXADECIMAL:
         entropy = unhexlify(entropy)  # type: bytes
-    entropy = Entropy(entropy)
+    try:
+        entropy = Entropy(entropy)
+    except ValueError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return ExitCode.EX_DATAERR
     mnemonic, seed = generate(entropy, config.password)
     with open(config.mnemonic_filepath, 'w') as file:
         file.write(mnemonic)
@@ -259,14 +250,23 @@ def action_generate(config: Config) -> ExitCode:
     return ExitCode.EX_OK
 
 
-@handle_exception
 def action_recover(config: Config) -> ExitCode:
     read_mode = 'rb' if config.format is Config.Format.BINARY else 'r'
     write_mode = 'wb' if config.format is Config.Format.BINARY else 'w'
     # TODO Check file size before reading?
-    with open(config.mnemonic_filepath, 'r') as file:
-        mnemonic = file.read()  # type: str
-    mnemonic = Mnemonic(mnemonic)
+    try:
+        with open(config.mnemonic_filepath, 'r') as file:
+            mnemonic = file.read()  # type: str
+    except FileNotFoundError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return ExitCode.EX_NOINPUT
+    try:
+        mnemonic = Mnemonic(mnemonic)
+    except ValueError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return ExitCode.EX_DATAERR
     entropy, seed = recover(mnemonic, config.password)
     with open(config.entropy_filepath, write_mode) as file:
         if config.format is Config.Format.TEXT_HEXADECIMAL:
@@ -282,20 +282,39 @@ def action_recover(config: Config) -> ExitCode:
     return ExitCode.EX_OK
 
 
-@handle_exception
 def action_verify(config: Config) -> ExitCode:
     read_mode = 'rb' if config.format is Config.Format.BINARY else 'r'
     write_mode = 'wb' if config.format is Config.Format.BINARY else 'w'
     # TODO Check file size before reading?
-    with open(config.mnemonic_filepath, 'r') as file:
-        mnemonic = file.read()  # type: str
-    mnemonic = Mnemonic(mnemonic)
+    try:
+        with open(config.mnemonic_filepath, 'r') as file:
+            mnemonic = file.read()  # type: str
+    except FileNotFoundError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return ExitCode.EX_NOINPUT
+    try:
+        mnemonic = Mnemonic(mnemonic)
+    except ValueError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return ExitCode.EX_DATAERR
     # TODO Check file size before reading?
-    with open(config.seed_filepath, read_mode) as file:
-        seed = file.read()  # type: typing.Union[bytes, str]
+    try:
+        with open(config.seed_filepath, read_mode) as file:
+            seed = file.read()  # type: typing.Union[bytes, str]
+    except FileNotFoundError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return ExitCode.EX_NOINPUT
     if config.format is Config.Format.TEXT_HEXADECIMAL:
         seed = unhexlify(seed)  # type: bytes
-    seed = Seed(seed)
+    try:
+        seed = Seed(seed)
+    except ValueError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return ExitCode.EX_DATAERR
     match = verify(mnemonic, seed, config.password)
     if not match:
         msg = 'Seeds do not match.'

@@ -209,6 +209,11 @@ def generate(entropy: Entropy, seed_password: str = '') -> Tuple[Mnemonic, Seed]
     :rtype: Tuple[Mnemonic, Seed]
     :return: Two item tuple where first is mnemonic phrase and second is seed.
     """
+    if not isinstance(entropy, Entropy):
+        raise TypeError('Expected Entropy, got {}'.format(type(entropy)))
+    if not isinstance(seed_password, str):
+        raise TypeError('Expected str, got {}'.format(type(seed_password)))
+
     mnemonic = entropy.toMnemonic()
     seed = mnemonic.toSeed(seed_password)
     return mnemonic, seed
@@ -222,6 +227,11 @@ def recover(mnemonic: Mnemonic, seed_password: str = '') -> Tuple[Entropy, Seed]
     :rtype: Tuple[Entropy, Seed]
     :return: Two item tuple where first is initial entropy and second is seed.
     """
+    if not isinstance(mnemonic, Mnemonic):
+        raise TypeError('Expected Mnemonic, got {}'.format(type(mnemonic)))
+    if not isinstance(seed_password, str):
+        raise TypeError('Expected str, got {}'.format(type(seed_password)))
+
     entropy = mnemonic.toEntropy()
     seed = mnemonic.toSeed(seed_password)
     return entropy, seed
@@ -235,5 +245,12 @@ def verify(mnemonic: Mnemonic, expected_seed: Seed, seed_password: str = '') -> 
     :rtype: bool
     :return: True if provided phrase generates expected seed, False otherwise.
     """
+    if not isinstance(expected_seed, Seed):
+        raise TypeError('Expected Seed, got {}'.format(type(expected_seed)))
+    if not isinstance(mnemonic, Mnemonic):
+        raise TypeError('Expected Mnemonic, got {}'.format(type(mnemonic)))
+    if not isinstance(seed_password, str):
+        raise TypeError('Expected str, got {}'.format(type(seed_password)))
+
     generated_seed = mnemonic.toSeed(seed_password)
     return expected_seed == generated_seed
