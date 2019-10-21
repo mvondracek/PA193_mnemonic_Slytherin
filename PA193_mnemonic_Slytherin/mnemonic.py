@@ -39,19 +39,16 @@ class dictionaryAccess:
         :return: List and dictionary of words
         """
         self._dict_list = []
+        self._dict_dict = {}
         with open(file_path, 'r') as f:
             for i in range(2048):
-                self._dict_list.append(next(f).strip())
-                if len(self._dict_list[-1]) > 16 or len(self._dict_list[-1].split()) != 1:
+                line = next(f).strip()
+                if len(line) > 16 or len(line.split()) != 1:
                     raise ValueError('Cannot instantiate dictionary')
-            try:
-                next(f)
-            except StopIteration:
-                pass
-            else:
+                self._dict_list.append(line)
+                self._dict_dict[line] = i
+            if f.read():
                 raise ValueError('Cannot instantiate dictionary')
-
-        self._dict_dict = {self._dict_list[i]: i for i in range(len(self._dict_list))}
 
 
 class Seed(bytes):
