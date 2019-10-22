@@ -106,7 +106,7 @@ class Entropy(bytes, dictionaryAccess):
         """
         dictionaryAccess.__init__(self)
 
-        if len(entropy) not in list(range(16, 32+1, 4)):
+        if not isinstance(entropy, bytes) or len(entropy) not in list(range(16, 32+1, 4)):
             raise ValueError('Cannot instantiate entropy')
         self = entropy
 

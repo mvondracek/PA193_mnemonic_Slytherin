@@ -195,10 +195,12 @@ TREZOR_TEST_VECTORS = {
 }
 
 
+# PUBLIC FUNCTION TESTS
 class TestMnemonicPublic(TestCase):
     """Tests for public part of mnemonic module (public API).
     Tests for `generate`, `recover`, and `verify` are similar, but we want to
     test each function separately.
+    TODO add testing for incorrect inputs
     """
 
     def test_generate(self):
@@ -227,39 +229,67 @@ class TestMnemonicPublic(TestCase):
             verify(Mnemonic(mnemonic), Seed(seed))
 
 
-# CLASS INSTANTIANTION TESTS - TODO add more test (different from Trezor vector) or remove those
+# PUBLIC CLASS TESTS - TODO add more test (different from Trezor vector)
 class TestMnemonic(TestCase):
-    """Tests for mnemonic entropy conversions.
+    """Tests Mnemonic instantiation. TODO test private methods, Invalid arguments
     """
-    @unittest.skip("Skipping until we switcheed tests to class representation.")
-    def test_mnemonic2entropy(self):
-        for test_vector in TREZOR_TEST_VECTORS['english']:
-            self.assertEqual(unhexlify(test_vector[0]), _mnemonic2entropy(test_vector[1]))
 
-    @unittest.skip("Skipping until we switcheed tests to class representation.")
-    def test_entropy2mnemonic(self):
+    def test_correct_instance(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
-            self.assertEqual(test_vector[1], _entropy2mnemonic(unhexlify(test_vector[0])))
+            try:
+                Mnemonic(test_vector[1])
+            except ValueError:
+                self.fail("Instantiation failed unexpectedly!")
 
 
 class TestSeed(TestCase):
-    """Tests for seed generation
+    """Tests Seed instantiation. TODO test private methods
     """
 
-    @unittest.skip("Skipping until we switcheed tests to class representation.")
-    def test_generate_seed(self):
+    def test_correct_instance(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
-            self.assertEqual(unhexlify(test_vector[2]), _generate_seed(test_vector[1], TREZOR_PASSWORD))
+            try:
+                Seed(unhexlify(test_vector[2]))
+            except ValueError:
+                self.fail("Instantiation failed unexpectedly!")
+
+    def test_invalid_argument(self):
+        test_cases_type = [None, '', '1234567890abcd', 'NonHexaString_!?', [b'']]
+        for test in test_cases_type:
+            with self.assertRaises(TypeError):
+                Seed(test)
+
+        test_cases_value = [b'', b'tooShort', b'63bytesLongSoExactlyOneByteShortOfBeingValidSoCloseYetSoFarSAD!',
+                            b'soLongItHurtsHurDurBlaBlaButAnywayThisShouldFail123456789101112131415', 0, 123,
+                            unhexlify(TREZOR_TEST_VECTORS['english'][0][2]) + b'almost_ok']
+        for test in test_cases_value:
+            with self.assertRaises(ValueError):
+                Seed(test)
 
 
 class TestEntropy(TestCase):
-    """Tests for entropy generation
+    """Tests Entropy instantiation. TODO test private methods
     """
 
-    @unittest.skip("Skipping until we switcheed tests to class representation.")
-    def test_generate_entropy(self):
+    def test_correct_instance(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
-            self.assertEqual(unhexlify(test_vector[2]), _generate_seed(test_vector[1], TREZOR_PASSWORD))
+            try:
+                Entropy(unhexlify(test_vector[0]))
+            except ValueError:
+                self.fail("Instantiation failed unexpectedly!")
+
+    def test_invalid_argument(self):
+        test_cases_type = [None, '', '1234567890abcd', 'NonHexaString_!?', [b'']]
+        for test in test_cases_type:
+            with self.assertRaises(TypeError):
+                Entropy(test)
+
+        test_cases_value = [b'', b'tooShort', b'Well26BytesIsNotGonnaCutIT', b'Not15neitherLol',
+                            b'soLongItHurtsHurDurBlaBlaButAnywayThisShouldFail123456789101112131415', 0, 123,
+                            unhexlify(TREZOR_TEST_VECTORS['english'][0][2]) + b'almost_ok']
+        for test in test_cases_value:
+            with self.assertRaises(ValueError):
+                Entropy(test)
 
 
 if __name__ == '__main__':
