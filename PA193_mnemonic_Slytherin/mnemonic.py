@@ -62,6 +62,7 @@ class Seed(bytes):
         """
         if not isinstance(seed, bytes) or len(seed) != SEED_LEN:
             raise ValueError('Cannot instantiate seed')
+        super().__init__()
 
     def __eq__(self, other: object) -> bool:
         """Compare seeds in constant time to prevent timing attacks.
@@ -104,10 +105,10 @@ class Entropy(bytes, dictionaryAccess):
         > https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
         :raises ValueError: on invalid parameters
         """
-        dictionaryAccess.__init__(self)
-
         if not isinstance(entropy, bytes) or len(entropy) not in (16, 20, 24, 28, 32):
             raise ValueError('Cannot instantiate entropy')
+        super().__init__()
+        dictionaryAccess.__init__(self)
         self.__mnemonic: Optional[Mnemonic] = None
 
     def checksum(self) -> int:
@@ -153,10 +154,10 @@ class Mnemonic(str, dictionaryAccess):
         """Convert mnemonic phrase to entropy using dictionary to ensure its validity.
         :raises ValueError: on invalid parameters
         """
-        dictionaryAccess.__init__(self)
-
         if not isinstance(mnemonic, str):
             raise TypeError('argument `mnemonic` should be str, not {}'.format(type(mnemonic).__name__))
+        super().__init__()
+        dictionaryAccess.__init__(self)
 
         words = mnemonic.split()
         n_words = len(words)
