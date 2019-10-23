@@ -222,11 +222,11 @@ class TestSeed(TestCase):
         # `self.seed_bytes_a1`, `self.seed_bytes_a2` are not identical, but compare to same value
         self.seed_bytes_b = int.to_bytes(255, 64, 'little')
 
-    def test_correct_instance(self):
+    def test___init__(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             Seed(unhexlify(test_vector[2]))
 
-    def test_invalid_argument(self):
+    def test___init___invalid_argument(self):
         test_cases_type = [None, '', '1234567890abcd', 'NonHexaString_!?', [b'']]
         for test in test_cases_type:
             with self.assertRaises(TypeError):
