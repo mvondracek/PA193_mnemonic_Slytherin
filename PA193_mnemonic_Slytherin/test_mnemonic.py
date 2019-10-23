@@ -212,7 +212,7 @@ class TestMnemonic(TestCase):
 
     def test___init___invalid_argument(self):
         for mnemonic_phrase_text in [None, 1, b'\xff', b'text as bytes not str', ['text in a list']]:
-            with self.assertRaises(ValueError):
+            with self.assertRaises(TypeError):
                 # noinspection PyTypeChecker
                 Mnemonic(mnemonic_phrase_text)  # type: ignore
 
