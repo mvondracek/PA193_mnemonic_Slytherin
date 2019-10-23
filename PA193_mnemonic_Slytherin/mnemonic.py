@@ -12,7 +12,8 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 import hmac
 import logging
 import os
-from hashlib import pbkdf2_hmac, sha256
+from unicodedata import normalize
+from hashlib import sha256, sha512
 from typing import Dict, List, Tuple
 
 __author__ = 'Team Slytherin: @sobuch, @lsolodkova, @mvondracek.'
@@ -22,8 +23,29 @@ logger = logging.getLogger(__name__)
 
 ENGLISH_DICTIONARY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'english.txt')
 PBKDF2_ROUNDS = 2048
-SEED_LEN = 64
 
+def xor_byte_strings(b1:bytes, b2: bytes) -> bytes:
+    """Function for XOR'ing two objects of byte type
+    Reference implementation: https://en.wikipedia.org/wiki/XOR_cipher
+    :rtype: bytes
+    :return b1 XOR b2
+    """
+    return bytes([x^y for x,y in zip(b1,b2)])
+
+def pbkdf2_sha512(passw: bytes, salt: bytes, rounds: int) -> bytes:
+    """Password Based Key Derivation Function
+    https://en.wikipedia.org/wiki/PBKDF2
+    Uses HMAC-SHA512, derived key length is 512 bit 
+    :rtype: bytes
+    :return: key derived by PBKDF2 algorithm
+    """
+    #The first iteration of PRF uses Password as the PRF key and Salt concatenated with i encoded as a big-endian 32-bit integer as the input.
+    U=hmac.new(passw,salt+(1).to_bytes(4,byteorder='big'),digestmod=sha512).digest()
+    F=U #F is the xor (^) of c iterations of chained PRFs
+    for i in range (1,rounds):
+        U=hmac.new(passw,U,digestmod=sha512).digest()
+        F=xor_byte_strings(F,U)
+    return F
 
 class dictionaryAccess:
     """Abstract class for classes requiring dictionary access
@@ -179,19 +201,25 @@ class Mnemonic(str, dictionaryAccess):
         if checksum != self.__entropy.checksum(shift):
             raise ValueError('Cannot instantiate mnemonic')
         self = mnemonic
-
+        
     def toSeed(self, seed_password: str = '') -> Seed:
         """Generate seed from the mnemonic phrase.
         Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
         (empty string) by default.
+        :raises ValueError: on invalid parameters
         :rtype: Seed
         :return: Seed
         """
+        
+        #the length of the password is bounded to 256
+        if len(seed_password) > 256:
+            raise ValueError('Password is too long')
         # the encoding of both inputs should be UTF-8 NFKD
         mnemonic = self.encode()  # encoding string into bytes, UTF-8 by default
+        seed_password=normalize('NFKD', seed_password)
         passphrase = "mnemonic" + seed_password
         passphrase = passphrase.encode()
-        return Seed(pbkdf2_hmac('sha512', mnemonic, passphrase, PBKDF2_ROUNDS, SEED_LEN))
+        return Seed(pbkdf2_sha512(mnemonic, passphrase, PBKDF2_ROUNDS))
 
     def toEntropy(self) -> Entropy:
         """Generate entropy from the mnemonic phrase.
