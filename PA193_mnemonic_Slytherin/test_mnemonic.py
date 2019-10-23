@@ -219,15 +219,6 @@ class TestMnemonicPublic(TestCase):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             self.assertTrue(verify(Mnemonic(test_vector[1]), Seed(unhexlify(test_vector[2])), TREZOR_PASSWORD))
 
-    @unittest.skip("Fails with 'OverflowError: repeated string is too long' TODO find where and whether its OK")
-    def test_verify_invalid_mnemonic_too_long(self):
-        """Too long mnemonic phrase which should not be propagated to BPKDF2."""
-        seed = unhexlify('c55257c360c07c72029aebc1b53c05ed0362ada38ead3e3e9efa3708e5349553'
-                         '1f09a6987599d18264c1e1c92f2cf141630c7a3c4ab7c81b2f001698e7463b04')
-        mnemonic = 'a' * 1024 * 1024 * 1024 * 2  # 2 GB
-        with self.assertRaises(ValueError):
-            verify(Mnemonic(mnemonic), Seed(seed))
-
 
 # PUBLIC CLASS TESTS - TODO add more test (different from Trezor vector)
 class TestMnemonic(TestCase):
@@ -240,6 +231,11 @@ class TestMnemonic(TestCase):
                 Mnemonic(test_vector[1])
             except ValueError:
                 self.fail("Instantiation failed unexpectedly!")
+
+    def test___init___too_long_str(self):
+        """Too long mnemonic phrase."""
+        with self.assertRaises(ValueError):
+            Mnemonic('a' * 1024 * 1024 * 1024 * 2)  # 2 GB
 
 
 class TestSeed(TestCase):
