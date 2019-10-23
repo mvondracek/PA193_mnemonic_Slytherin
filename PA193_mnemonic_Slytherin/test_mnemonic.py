@@ -266,7 +266,8 @@ class TestEntropy(TestCase):
         test_cases_type = [None, '', '1234567890abcd', 'NonHexaString_!?', [b'']]
         for test in test_cases_type:
             with self.assertRaises(TypeError):
-                Entropy(test)
+                # noinspection PyTypeChecker
+                Entropy(test)  # type: ignore
 
         test_cases_value = [b'', b'tooShort', b'Well26BytesIsNotGonnaCutIT', b'Not15neitherLol',
                             b'soLongItHurtsHurDurBlaBlaButAnywayThisShouldFail123456789101112131415', 0, 123,
