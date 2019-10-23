@@ -46,7 +46,7 @@ def pbkdf2_sha512(passw: bytes, salt: bytes, rounds: int) -> bytes:
     # and Salt concatenated with i encoded as a big-endian
     # 32-bit integer as the input.
     U = hmac.new(passw, salt + (1).to_bytes(4, byteorder='big'), digestmod=sha512).digest()
-    F = U # F is the xor (^) of c iterations of chained PRFs
+    F = U  # F is the xor (^) of c iterations of chained PRFs
     for i in range(1, rounds):
         U = hmac.new(passw, U, digestmod=sha512).digest()
         F = xor_byte_strings(F, U)
@@ -207,7 +207,7 @@ class Mnemonic(str, dictionaryAccess):
         if checksum != self.__entropy.checksum(shift):
             raise ValueError('Cannot instantiate mnemonic')
         self = mnemonic
-        
+
     def toSeed(self, seed_password: str = '') -> Seed:
         """Generate seed from the mnemonic phrase.
         Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
