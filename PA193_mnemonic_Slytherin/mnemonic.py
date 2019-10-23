@@ -25,13 +25,15 @@ ENGLISH_DICTIONARY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)
 PBKDF2_ROUNDS = 2048
 SEED_LEN = 64
 
-def xor_byte_strings(b1:bytes, b2: bytes) -> bytes:
+
+def xor_byte_strings(b1: bytes, b2: bytes) -> bytes:
     """Function for XOR'ing two objects of byte type
     Reference implementation: https://en.wikipedia.org/wiki/XOR_cipher
     :rtype: bytes
     :return b1 XOR b2
     """
-    return bytes([x^y for x,y in zip(b1,b2)])
+    return bytes([x ^ y for x, y in zip(b1, b2)])
+
 
 def pbkdf2_sha512(passw: bytes, salt: bytes, rounds: int) -> bytes:
     """Password Based Key Derivation Function
@@ -40,13 +42,16 @@ def pbkdf2_sha512(passw: bytes, salt: bytes, rounds: int) -> bytes:
     :rtype: bytes
     :return: key derived by PBKDF2 algorithm
     """
-    #The first iteration of PRF uses Password as the PRF key and Salt concatenated with i encoded as a big-endian 32-bit integer as the input.
-    U=hmac.new(passw,salt+(1).to_bytes(4,byteorder='big'),digestmod=sha512).digest()
-    F=U #F is the xor (^) of c iterations of chained PRFs
-    for i in range (1,rounds):
-        U=hmac.new(passw,U,digestmod=sha512).digest()
-        F=xor_byte_strings(F,U)
+    #The first iteration of PRF uses Password as the PRF key
+    #and Salt concatenated with i encoded as a big-endian
+    #32-bit integer as the input.
+    U = hmac.new(passw, salt+(1).to_bytes(4, byteorder = 'big'), digestmod = sha512).digest()
+    F = U  #F is the xor (^) of c iterations of chained PRFs
+    for i in range(1, rounds):
+        U=hmac.new(passw, U, digestmod = sha512).digest()
+        F=xor_byte_strings(F, U)
     return F
+
 
 class dictionaryAccess:
     """Abstract class for classes requiring dictionary access
@@ -211,13 +216,12 @@ class Mnemonic(str, dictionaryAccess):
         :rtype: Seed
         :return: Seed
         """
-        
         #the length of the password is bounded to 256
         if len(seed_password) > 256:
             raise ValueError('Password is too long')
         # the encoding of both inputs should be UTF-8 NFKD
         mnemonic = self.encode()  # encoding string into bytes, UTF-8 by default
-        seed_password=normalize('NFKD', seed_password)
+        seed_password = normalize('NFKD', seed_password)
         passphrase = "mnemonic" + seed_password
         passphrase = passphrase.encode()
         return Seed(pbkdf2_sha512(mnemonic, passphrase, PBKDF2_ROUNDS))
