@@ -222,7 +222,8 @@ class TestMnemonicPublic(TestCase):
 
 # PUBLIC CLASS TESTS - TODO add more test (different from Trezor vector)
 class TestMnemonic(TestCase):
-    """Tests Mnemonic instantiation. TODO test private methods, Invalid arguments
+    """Tests Mnemonic
+    TODO test private methods, Invalid arguments
     """
 
     def test_correct_instance(self):
