@@ -26,7 +26,7 @@ PBKDF2_ROUNDS = 2048
 SEED_LEN = 64
 
 
-class dictionaryAccess:
+class DictionaryAccess:
     """Abstract class for classes requiring dictionary access
     """
 
@@ -91,7 +91,7 @@ class Seed(bytes):
         return not (self == other)
 
 
-class Entropy(bytes, dictionaryAccess):
+class Entropy(bytes, DictionaryAccess):
     """Class for entropy representation.
     """
 
@@ -108,7 +108,7 @@ class Entropy(bytes, dictionaryAccess):
         if not isinstance(entropy, bytes) or len(entropy) not in (16, 20, 24, 28, 32):
             raise ValueError('Cannot instantiate entropy')
         super().__init__()
-        dictionaryAccess.__init__(self)
+        DictionaryAccess.__init__(self)
         self.__mnemonic: Optional[Mnemonic] = None
 
     def checksum(self) -> int:
@@ -121,7 +121,7 @@ class Entropy(bytes, dictionaryAccess):
         checksum_length = len(self) // 4
         return int.from_bytes(entropy_hash, byteorder='big') >> (256 - checksum_length)
 
-    def toMnemonic(self) -> 'Mnemonic':
+    def to_mnemonic(self) -> 'Mnemonic':
         """Convert entropy to mnemonic phrase using dictionary.
         :rtype: Mnemonic
         :return: Mnemonic phrase
@@ -146,7 +146,7 @@ class Entropy(bytes, dictionaryAccess):
         return deepcopy(self.__mnemonic)
 
 
-class Mnemonic(str, dictionaryAccess):
+class Mnemonic(str, DictionaryAccess):
     """Class for mnemonic representation.
     """
 
@@ -157,7 +157,7 @@ class Mnemonic(str, dictionaryAccess):
         if not isinstance(mnemonic, str):
             raise TypeError('argument `mnemonic` should be str, not {}'.format(type(mnemonic).__name__))
         super().__init__()
-        dictionaryAccess.__init__(self)
+        DictionaryAccess.__init__(self)
 
         words = mnemonic.split()
         n_words = len(words)
@@ -191,7 +191,7 @@ class Mnemonic(str, dictionaryAccess):
 
     @staticmethod
     def checksum(mnemonic: str, dictionary_file_path: str = ENGLISH_DICTIONARY_PATH) -> int:
-        # region TODO copied from dictionaryAccess.__init__
+        # region TODO copied from DictionaryAccess.__init__
         _dict_list = []
         _dict_dict = {}
         with open(dictionary_file_path, 'r') as f:
@@ -232,7 +232,7 @@ class Mnemonic(str, dictionaryAccess):
         # endregion
         return checksum_included
 
-    def toSeed(self, seed_password: str = '') -> Seed:
+    def to_seed(self, seed_password: str = '') -> Seed:
         """Generate seed from the mnemonic phrase.
         Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
         (empty string) by default.
@@ -247,7 +247,7 @@ class Mnemonic(str, dictionaryAccess):
         passphrase = passphrase.encode()
         return Seed(pbkdf2_hmac('sha512', mnemonic, passphrase, PBKDF2_ROUNDS, SEED_LEN))
 
-    def toEntropy(self) -> Entropy:
+    def to_entropy(self) -> Entropy:
         """Generate entropy from the mnemonic phrase.
         :rtype: Entropy
         :return: entropy
@@ -268,8 +268,8 @@ def generate(entropy: Entropy, seed_password: str = '') -> Tuple[Mnemonic, Seed]
     if not isinstance(seed_password, str):
         raise TypeError('Expected str, got {}'.format(type(seed_password)))
 
-    mnemonic = entropy.toMnemonic()
-    seed = mnemonic.toSeed(seed_password)
+    mnemonic = entropy.to_mnemonic()
+    seed = mnemonic.to_seed(seed_password)
     return mnemonic, seed
 
 
@@ -286,8 +286,8 @@ def recover(mnemonic: Mnemonic, seed_password: str = '') -> Tuple[Entropy, Seed]
     if not isinstance(seed_password, str):
         raise TypeError('Expected str, got {}'.format(type(seed_password)))
 
-    entropy = mnemonic.toEntropy()
-    seed = mnemonic.toSeed(seed_password)
+    entropy = mnemonic.to_entropy()
+    seed = mnemonic.to_seed(seed_password)
     return entropy, seed
 
 
@@ -306,5 +306,5 @@ def verify(mnemonic: Mnemonic, expected_seed: Seed, seed_password: str = '') -> 
     if not isinstance(seed_password, str):
         raise TypeError('Expected str, got {}'.format(type(seed_password)))
 
-    generated_seed = mnemonic.toSeed(seed_password)
+    generated_seed = mnemonic.to_seed(seed_password)
     return expected_seed == generated_seed

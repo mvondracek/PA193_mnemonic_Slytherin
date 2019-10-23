@@ -263,7 +263,7 @@ class TestMnemonic(TestCase):
             with self.subTest(mnemonic=test_vector[1]):
                 mnemonic = Mnemonic(test_vector[1])
                 seed_expected = Seed(unhexlify(test_vector[2]))
-                self.assertEqual(seed_expected, mnemonic.toSeed(TREZOR_PASSWORD))
+                self.assertEqual(seed_expected, mnemonic.to_seed(TREZOR_PASSWORD))
 
     def test_toSeed_invalid_password(self):
         for password in [None, 1, ['text in array'], b'text as bytes']:
@@ -272,29 +272,29 @@ class TestMnemonic(TestCase):
                                     ' abandon abandon abandon abandon abandon about')
                 with self.assertRaisesRegex(TypeError, r'argument `seed_password` should be str'):
                     # noinspection PyTypeChecker
-                    mnemonic.toSeed(password)  # type: ignore
+                    mnemonic.to_seed(password)  # type: ignore
 
     def test_toEntropy(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             with self.subTest(mnemonic=test_vector[1]):
                 mnemonic = Mnemonic(test_vector[1])
                 entropy_expected = Entropy(unhexlify(test_vector[0]))
-                self.assertEqual(entropy_expected, mnemonic.toEntropy())
+                self.assertEqual(entropy_expected, mnemonic.to_entropy())
 
     def test_toEntropy_deep_copy(self):
         m = Mnemonic('abandon abandon abandon abandon abandon abandon'
                      ' abandon abandon abandon abandon abandon about')
-        self.assertIsNot(m.toEntropy(),
-                         m.toEntropy())
-        self.assertEqual(m.toEntropy(),
-                         m.toEntropy())
-        e_from_m = m.toEntropy()  # returns new Entropy
+        self.assertIsNot(m.to_entropy(),
+                         m.to_entropy())
+        self.assertEqual(m.to_entropy(),
+                         m.to_entropy())
+        e_from_m = m.to_entropy()  # returns new Entropy
 
-        self.assertIsNot(e_from_m.toMnemonic(),
-                         e_from_m.toMnemonic())
-        self.assertEqual(e_from_m.toMnemonic(),
-                         e_from_m.toMnemonic())
-        m_from_e_from_m = e_from_m.toMnemonic()  # returns new Mnemonic
+        self.assertIsNot(e_from_m.to_mnemonic(),
+                         e_from_m.to_mnemonic())
+        self.assertEqual(e_from_m.to_mnemonic(),
+                         e_from_m.to_mnemonic())
+        m_from_e_from_m = e_from_m.to_mnemonic()  # returns new Mnemonic
         self.assertIsNot(m_from_e_from_m, m)
         self.assertEqual(m_from_e_from_m, m)
 
@@ -375,21 +375,21 @@ class TestEntropy(TestCase):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             entropy = Entropy(unhexlify(test_vector[0]))
             mnemonic_expected = Mnemonic(test_vector[1])
-            self.assertEqual(mnemonic_expected, entropy.toMnemonic())
+            self.assertEqual(mnemonic_expected, entropy.to_mnemonic())
 
     def test_toMnemonic_deep_copy(self):
         e = Entropy(unhexlify('00000000000000000000000000000000'))
-        self.assertIsNot(e.toMnemonic(),
-                         e.toMnemonic())
-        self.assertEqual(e.toMnemonic(),
-                         e.toMnemonic())
-        m_from_e = e.toMnemonic()  # returns new Mnemonic
+        self.assertIsNot(e.to_mnemonic(),
+                         e.to_mnemonic())
+        self.assertEqual(e.to_mnemonic(),
+                         e.to_mnemonic())
+        m_from_e = e.to_mnemonic()  # returns new Mnemonic
 
-        self.assertIsNot(m_from_e.toEntropy(),
-                         m_from_e.toEntropy())
-        self.assertEqual(m_from_e.toEntropy(),
-                         m_from_e.toEntropy())
-        e_from_m_from_e = m_from_e.toEntropy()  # returns new Entropy
+        self.assertIsNot(m_from_e.to_entropy(),
+                         m_from_e.to_entropy())
+        self.assertEqual(m_from_e.to_entropy(),
+                         m_from_e.to_entropy())
+        e_from_m_from_e = m_from_e.to_entropy()  # returns new Entropy
         self.assertIsNot(e_from_m_from_e, e)
         self.assertEqual(e_from_m_from_e, e)
 
