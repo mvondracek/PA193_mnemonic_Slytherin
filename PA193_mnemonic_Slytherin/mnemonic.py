@@ -110,13 +110,15 @@ class Entropy(bytes, dictionaryAccess):
             raise ValueError('Cannot instantiate entropy')
         self = entropy
 
-    def checksum(self, length: int) -> int:
-        """Calculate entropy checksum of set length
+    def checksum(self) -> int:
+        """Calculate checksum of this entropy based on its length
         :rtype: int
         :return: checksum
         """
         entropy_hash = sha256(self).digest()
-        return int.from_bytes(entropy_hash, byteorder='big') >> 256 - length
+        assert len(self) % 4 == 0
+        checksum_length = len(self) // 4
+        return int.from_bytes(entropy_hash, byteorder='big') >> (256 - checksum_length)
 
     def toMnemonic(self) -> 'Mnemonic':
         """Convert entropy to mnemonic phrase using dictionary.
@@ -129,7 +131,7 @@ class Entropy(bytes, dictionaryAccess):
         wordlist.'
         """
         shift = len(self) // 4
-        checksum = self.checksum(shift)
+        checksum = self.checksum()
 
         # Concatenated bits representing the indexes
         indexes_bin = (int.from_bytes(self, byteorder='big') << shift) | checksum
@@ -179,7 +181,7 @@ class Mnemonic(str, dictionaryAccess):
 
         self.__entropy = Entropy(entropy)
         # Check correctness
-        checksum_computed = self.__entropy.checksum(shift)
+        checksum_computed = self.__entropy.checksum()
         if checksum_included != checksum_computed:
             raise ValueError('argument `mnemonic` includes checksum {} different from computed {}'
                              .format(checksum_included, checksum_computed))
