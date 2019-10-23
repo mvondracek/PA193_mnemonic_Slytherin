@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 ENGLISH_DICTIONARY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'english.txt')
 PBKDF2_ROUNDS = 2048
+SEED_LEN = 64
 
 def xor_byte_strings(b1:bytes, b2: bytes) -> bytes:
     """Function for XOR'ing two objects of byte type
