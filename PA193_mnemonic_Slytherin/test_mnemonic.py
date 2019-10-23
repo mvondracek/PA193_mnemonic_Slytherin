@@ -283,6 +283,12 @@ class TestEntropy(TestCase):
                 entropy = Entropy(unhexlify(test_vector[0]))
                 self.assertEqual(checksum_from_mnemonic, entropy.checksum())
 
+    def test_toMnemonic(self):
+        for test_vector in TREZOR_TEST_VECTORS['english']:
+            entropy = Entropy(unhexlify(test_vector[0]))
+            mnemonic_expected = Mnemonic(test_vector[1])
+            self.assertEqual(mnemonic_expected, entropy.toMnemonic())
+
 
 if __name__ == '__main__':
     unittest.main()
