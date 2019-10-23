@@ -207,7 +207,7 @@ class TestMnemonicPublic(TestCase):
             self.assertEqual(Mnemonic(test_vector[1]), mnemonic)
             self.assertEqual(Seed(unhexlify(test_vector[2])), seed)
 
-    @unittest.expectedFailure
+    @unittest.expectedFailure  # BUG #29 https://github.com/mvondracek/PA193_mnemonic_Slytherin/issues/29
     def test_generate_invalid_password_too_long(self):
         entropy = Entropy(unhexlify('00000000000000000000000000000000'))
         password = 'a' * 1024 * 1024 * 1024 * 2  # 2 GB
@@ -220,7 +220,7 @@ class TestMnemonicPublic(TestCase):
             self.assertEqual(Entropy(unhexlify(test_vector[0])), entropy)
             self.assertEqual(Seed(unhexlify(test_vector[2])), seed)
 
-    @unittest.expectedFailure
+    @unittest.expectedFailure  # BUG #29 https://github.com/mvondracek/PA193_mnemonic_Slytherin/issues/29
     def test_recover_invalid_password_too_long(self):
         mnemonic = Mnemonic('abandon abandon abandon abandon abandon abandon'
                             ' abandon abandon abandon abandon abandon about')
@@ -247,7 +247,7 @@ class TestMnemonic(TestCase):
     """Tests for mnemonic entropy conversions.
     """
 
-    @unittest.expectedFailure
+    @unittest.expectedFailure  # BUG #29 https://github.com/mvondracek/PA193_mnemonic_Slytherin/issues/29
     def test_toSeed_invalid_password_too_long(self):
         mnemonic = Mnemonic('abandon abandon abandon abandon abandon abandon'
                             ' abandon abandon abandon abandon abandon about')
@@ -265,7 +265,7 @@ class TestMnemonic(TestCase):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             self.assertEqual(test_vector[1], _entropy2mnemonic(unhexlify(test_vector[0])))
 
-    @unittest.expectedFailure
+    @unittest.expectedFailure  # BUG #29 https://github.com/mvondracek/PA193_mnemonic_Slytherin/issues/29
     def test_verify_invalid_password_too_long(self):
         # TODO separate actions and add setUp
         seed = Seed(unhexlify('c55257c360c07c72029aebc1b53c05ed0362ada38ead3e3e9efa3708e5349553'
