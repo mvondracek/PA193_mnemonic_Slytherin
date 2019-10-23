@@ -210,6 +210,24 @@ class TestMnemonic(TestCase):
             for whitespace in whitespaces:
                 Mnemonic(whitespace + test_vector[1] + whitespace)
 
+    def test___init___invalid_argument(self):
+        for mnemonic_phrase_text in [None, 1, b'\xff', b'text as bytes not str', ['text in a list']]:
+            with self.assertRaises(ValueError):
+                # noinspection PyTypeChecker
+                Mnemonic(mnemonic_phrase_text)  # type: ignore
+
+        test_inputs = [
+            '',
+            'test_ string_ not_ in_ dictionary_',
+            'あいいここあくしんん',
+            'not_in_dictionary ' * 12,
+            'abandon ' * 12,
+            TREZOR_TEST_VECTORS['english'][0][1] + ' abandon',
+            ]
+        for test_input in test_inputs:
+            with self.assertRaises(ValueError):
+                Mnemonic(test_input)
+
     def test___init___too_long_str(self):
         """Too long mnemonic phrase."""
         with self.assertRaises(ValueError):
