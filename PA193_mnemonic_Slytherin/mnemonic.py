@@ -62,7 +62,6 @@ class Seed(bytes):
         """
         if not isinstance(seed, bytes) or len(seed) != SEED_LEN:
             raise ValueError('Cannot instantiate seed')
-        self = seed
 
     def __eq__(self, other: object) -> bool:
         """Compare seeds in constant time to prevent timing attacks.
@@ -110,7 +109,6 @@ class Entropy(bytes, dictionaryAccess):
         if not isinstance(entropy, bytes) or len(entropy) not in (16, 20, 24, 28, 32):
             raise ValueError('Cannot instantiate entropy')
         self.__mnemonic: Optional[Mnemonic] = None
-        self = entropy
 
     def checksum(self) -> int:
         """Calculate checksum of this entropy based on its length
@@ -189,7 +187,6 @@ class Mnemonic(str, dictionaryAccess):
         if checksum_included != checksum_computed:
             raise ValueError('argument `mnemonic` includes checksum {} different from computed {}'
                              .format(checksum_included, checksum_computed))
-        self = mnemonic
 
     @staticmethod
     def checksum(mnemonic: str, dictionary_file_path: str = ENGLISH_DICTIONARY_PATH) -> int:
