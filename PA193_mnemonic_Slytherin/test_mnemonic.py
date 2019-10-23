@@ -256,14 +256,13 @@ class TestSeed(TestCase):
 
 
 class TestEntropy(TestCase):
-    """Tests Entropy instantiation. TODO test private methods
-    """
+    """Tests Entropy"""
 
-    def test_correct_instance(self):
+    def test___init__(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             Entropy(unhexlify(test_vector[0]))
 
-    def test_invalid_argument(self):
+    def test___init___invalid_argument(self):
         test_cases_type = [None, '', '1234567890abcd', 'NonHexaString_!?', [b'']]
         for test in test_cases_type:
             with self.assertRaises(TypeError):
