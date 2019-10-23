@@ -261,6 +261,13 @@ class TestMnemonic(TestCase):
                 checksum = Mnemonic.checksum(test_vector[1])
                 self.assertEqual(entropy.checksum(), checksum)
 
+    def test_toSeed(self):
+        for test_vector in TREZOR_TEST_VECTORS['english']:
+            with self.subTest(mnemonic=test_vector[1]):
+                mnemonic = Mnemonic(test_vector[1])
+                seed_expected = Seed(unhexlify(test_vector[2]))
+                self.assertEqual(seed_expected, mnemonic.toSeed(TREZOR_PASSWORD))
+
     def test_toEntropy(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             with self.subTest(mnemonic=test_vector[1]):
