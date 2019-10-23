@@ -202,8 +202,31 @@ class TestMnemonic(TestCase):
     TODO test private methods, Invalid arguments
     """
     def test___init__(self):
+        whitespaces = ['\t', '\n', '\x0b', '\x0c', '\r', ' ', '\x85', '\xa0', '\u1680', '\u2000', '\u2001', '\u2002',
+                       '\u2003', '\u2004', '\u2005', '\u2006', '\u2007', '\u2008', '\u2009', '\u200a', '\u2028',
+                       '\u2029', '\u202f', '\u205f', '\u3000']
         for test_vector in TREZOR_TEST_VECTORS['english']:
             Mnemonic(test_vector[1])
+            for whitespace in whitespaces:
+                Mnemonic(whitespace + test_vector[1] + whitespace)
+
+    def test___init___invalid_argument(self):
+        for mnemonic_phrase_text in [None, 1, b'\xff', b'text as bytes not str', ['text in a list']]:
+            with self.assertRaises(ValueError):
+                # noinspection PyTypeChecker
+                Mnemonic(mnemonic_phrase_text)  # type: ignore
+
+        test_inputs = [
+            '',
+            'test_ string_ not_ in_ dictionary_',
+            'あいいここあくしんん',
+            'not_in_dictionary ' * 12,
+            'abandon ' * 12,
+            TREZOR_TEST_VECTORS['english'][0][1] + ' abandon',
+            ]
+        for test_input in test_inputs:
+            with self.assertRaises(ValueError):
+                Mnemonic(test_input)
 
     def test___init___too_long_str(self):
         """Too long mnemonic phrase."""
