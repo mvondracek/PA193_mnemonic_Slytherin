@@ -253,6 +253,14 @@ class TestMnemonic(TestCase):
         with self.assertRaises(ValueError):
             Mnemonic('a' * 1024 * 1024 * 1024 * 2)  # 2 GB
 
+    def test_checksum(self):
+        # TODO Could we check `Mnemonic.checksum` without `Entropy.checksum`? See `TestEntropy.test_checksum`.
+        for test_vector in TREZOR_TEST_VECTORS['english']:
+            with self.subTest(mnemonic=test_vector[1]):
+                entropy = Entropy(unhexlify(test_vector[0]))
+                checksum = Mnemonic.checksum(test_vector[1])
+                self.assertEqual(entropy.checksum(), checksum)
+
 
 class TestSeed(TestCase):
     """Tests Seed"""
@@ -319,6 +327,7 @@ class TestEntropy(TestCase):
                 Entropy(test)
 
     def test_checksum(self):
+        # TODO Could we check `Entropy.checksum` without `Mnemonic.checksum`? See `TestMnemonic.test_checksum`.
         for test_vector in TREZOR_TEST_VECTORS['english']:
             with self.subTest(entropy=test_vector[0]):
                 checksum_from_mnemonic = Mnemonic.checksum(test_vector[1])
