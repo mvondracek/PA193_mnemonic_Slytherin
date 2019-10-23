@@ -152,17 +152,20 @@ class Mnemonic(str, dictionaryAccess):
         dictionaryAccess.__init__(self)
 
         if not isinstance(mnemonic, str):
-            raise ValueError('Cannot instantiate mnemonic')
+            raise TypeError('argument `mnemonic` should be str, not {}'.format(type(mnemonic).__name__))
 
         words = mnemonic.split()
         n_words = len(words)
-        if n_words not in (12, 15, 18, 21, 24):
-            raise ValueError('Cannot instantiate mnemonic')
+        valid_mnemonic_words_numbers = (12, 15, 18, 21, 24)
+        if n_words not in valid_mnemonic_words_numbers:
+            raise ValueError('argument `mnemonic` has invalid number of words, {} given, expected one of {}'
+                             .format(n_words, valid_mnemonic_words_numbers))
 
         try:
             indexes = [self._dict_dict[word] for word in words]
-        except KeyError:
-            raise ValueError('Cannot instantiate mnemonic')
+        except KeyError as e:
+            raise ValueError('argument `mnemonic` contains word {} which is not in current dictionary'
+                             .format(e.args[0]))
 
         # Concatenate indexes into single variable
         indexes_bin = sum([indexes[-i - 1] << i * 11 for i in reversed(range(n_words))])
@@ -170,14 +173,16 @@ class Mnemonic(str, dictionaryAccess):
         # Number of bits entropy is shifted by
         shift = n_words * 11 // 32
 
-        checksum = indexes_bin & (pow(2, shift) - 1)
+        checksum_included = indexes_bin & (pow(2, shift) - 1)
         entropy_bin = indexes_bin >> shift
         entropy = entropy_bin.to_bytes((n_words * 11 - shift) // 8, byteorder='big')
 
         self.__entropy = Entropy(entropy)
         # Check correctness
-        if checksum != self.__entropy.checksum(shift):
-            raise ValueError('Cannot instantiate mnemonic')
+        checksum_computed = self.__entropy.checksum(shift)
+        if checksum_included != checksum_computed:
+            raise ValueError('argument `mnemonic` includes checksum {} different from computed {}'
+                             .format(checksum_included, checksum_computed))
         self = mnemonic
 
     def toSeed(self, seed_password: str = '') -> Seed:
