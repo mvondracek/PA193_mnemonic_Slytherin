@@ -237,6 +237,8 @@ class Mnemonic(str, dictionaryAccess):
         :rtype: Seed
         :return: Seed
         """
+        if not isinstance(seed_password, str):
+            raise TypeError('argument `seed_password` should be str, not {}'.format(type(seed_password).__name__))
         # the encoding of both inputs should be UTF-8 NFKD
         mnemonic = self.encode()  # encoding string into bytes, UTF-8 by default
         passphrase = "mnemonic" + seed_password

@@ -266,6 +266,15 @@ class TestMnemonic(TestCase):
                 seed_expected = Seed(unhexlify(test_vector[2]))
                 self.assertEqual(seed_expected, mnemonic.toSeed(TREZOR_PASSWORD))
 
+    def test_toSeed_invalid_password(self):
+        for password in [None, 1, ['text in array'], b'text as bytes']:
+            with self.subTest(password=password):
+                mnemonic = Mnemonic('abandon abandon abandon abandon abandon abandon'
+                                    ' abandon abandon abandon abandon abandon about')
+                with self.assertRaisesRegex(TypeError, r'argument `seed_password` should be str'):
+                    # noinspection PyTypeChecker
+                    mnemonic.toSeed(password)  # type: ignore
+
     def test_toEntropy(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             with self.subTest(mnemonic=test_vector[1]):
