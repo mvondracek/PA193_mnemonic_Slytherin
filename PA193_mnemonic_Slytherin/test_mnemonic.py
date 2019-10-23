@@ -227,10 +227,7 @@ class TestMnemonic(TestCase):
     """
     def test___init__(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
-            try:
-                Mnemonic(test_vector[1])
-            except ValueError:
-                self.fail("Instantiation failed unexpectedly!")
+            Mnemonic(test_vector[1])
 
     def test___init___too_long_str(self):
         """Too long mnemonic phrase."""
