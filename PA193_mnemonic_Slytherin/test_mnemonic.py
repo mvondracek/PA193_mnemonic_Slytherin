@@ -246,6 +246,13 @@ class TestSeed(TestCase):
         self.assertTrue(Seed(self.seed_bytes_a1) == Seed(self.seed_bytes_a2))
         self.assertFalse(Seed(self.seed_bytes_a1) == Seed(self.seed_bytes_b))
 
+    def test__ne__(self):
+        s1 = Seed(self.seed_bytes_a1)
+        self.assertFalse(s1 != s1)
+        self.assertFalse(Seed(self.seed_bytes_a1) != Seed(self.seed_bytes_a1))
+        self.assertFalse(Seed(self.seed_bytes_a1) != Seed(self.seed_bytes_a2))
+        self.assertTrue(Seed(self.seed_bytes_a1) != Seed(self.seed_bytes_b))
+
 
 
 class TestEntropy(TestCase):
