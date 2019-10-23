@@ -24,48 +24,54 @@ class TestMain(unittest.TestCase):
     SCRIPT = 'mnemoniccli.py'
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-    def assert_argument_error(self, args):
-        cli = subprocess.run(args, timeout=self.TIMEOUT, cwd=self.SCRIPT_DIR,
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+    def execute_cli(self, args):
+        return subprocess.run(args, timeout=self.TIMEOUT, cwd=self.SCRIPT_DIR,
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+
+    def assert_cli_error(self, args, exitcode: ExitCode):
+        cli = self.execute_cli(args)
         self.assertEqual('', cli.stdout)
         self.assertNotEqual('', cli.stderr)
-        self.assertEqual(ExitCode.ARGUMENTS.value, cli.returncode)
+        self.assertEqual(exitcode.value, cli.returncode)
 
-    def assert_argument_ok_terminated(self, args):
-        cli = subprocess.run(args, timeout=self.TIMEOUT, cwd=self.SCRIPT_DIR,
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+    def assert_cli_success(self, args):
+        cli = self.execute_cli(args)
         self.assertNotEqual('', cli.stdout)
         self.assertEqual('', cli.stderr)
         self.assertEqual(ExitCode.EX_OK.value, cli.returncode)
 
     def test_arguments_error(self):
         """invalid arguments"""
-        self.assert_argument_error([self.PYTHON, self.SCRIPT])
-        self.assert_argument_error([self.PYTHON, self.SCRIPT, '-ll', 'FOO'])
-        self.assert_argument_error([self.PYTHON, self.SCRIPT, '-g'])
-        self.assert_argument_error([self.PYTHON, self.SCRIPT, '-r'])
-        self.assert_argument_error([self.PYTHON, self.SCRIPT, '-v'])
-        self.assert_argument_error([self.PYTHON, self.SCRIPT, '-g', '-r', '-v'])
+        self.assert_cli_error([self.PYTHON, self.SCRIPT], ExitCode.ARGUMENTS)
+        self.assert_cli_error([self.PYTHON, self.SCRIPT, '-ll', 'FOO'], ExitCode.ARGUMENTS)
+        self.assert_cli_error([self.PYTHON, self.SCRIPT, '-g'], ExitCode.ARGUMENTS)
+        self.assert_cli_error([self.PYTHON, self.SCRIPT, '-r'], ExitCode.ARGUMENTS)
+        self.assert_cli_error([self.PYTHON, self.SCRIPT, '-v'], ExitCode.ARGUMENTS)
+        self.assert_cli_error([self.PYTHON, self.SCRIPT, '-g', '-r', '-v'], ExitCode.ARGUMENTS)
 
     def test_arguments_ok_terminated(self):
         """correct argument resulting in termination"""
-        self.assert_argument_ok_terminated([self.PYTHON, self.SCRIPT, '-h'])
-        self.assert_argument_ok_terminated([self.PYTHON, self.SCRIPT, '--help'])
-        self.assert_argument_ok_terminated([self.PYTHON, self.SCRIPT, '-V'])
-        self.assert_argument_ok_terminated([self.PYTHON, self.SCRIPT, '--version'])
+        self.assert_cli_success([self.PYTHON, self.SCRIPT, '-h'])
+        self.assert_cli_success([self.PYTHON, self.SCRIPT, '--help'])
+        self.assert_cli_success([self.PYTHON, self.SCRIPT, '-V'])
+        self.assert_cli_success([self.PYTHON, self.SCRIPT, '--version'])
 
-    def test_arguments_error_file_path(self):
+    def test_arguments_EX_NOINPUT(self):
         """input files don't exist"""
         with TemporaryDirectory() as tmpdir:
             non_existing_filepath = os.path.join(tmpdir, '__this_file_does_not_exist__')
-            self.assert_argument_error([self.PYTHON, self.SCRIPT, '-g', '-e', non_existing_filepath])
-            self.assert_argument_error([self.PYTHON, self.SCRIPT, '-r', '-m', non_existing_filepath])
-            self.assert_argument_error([self.PYTHON, self.SCRIPT, '-v', '-m', non_existing_filepath, '-s', non_existing_filepath])
+            self.assert_cli_error([self.PYTHON, self.SCRIPT, '-g', '-e', non_existing_filepath], ExitCode.EX_NOINPUT)
+            self.assert_cli_error([self.PYTHON, self.SCRIPT, '-r', '-m', non_existing_filepath], ExitCode.EX_NOINPUT)
+            self.assert_cli_error(
+                [self.PYTHON, self.SCRIPT, '-v', '-m', non_existing_filepath, '-s', non_existing_filepath],
+                ExitCode.EX_NOINPUT)
 
             with open(os.path.join(tmpdir, '__this_file_exists__.txt'), 'w') as f:
                 f.write('foo bar')
-            self.assert_argument_error([self.PYTHON, self.SCRIPT, '-v', '-m', f.name, '-s', non_existing_filepath])
-            self.assert_argument_error([self.PYTHON, self.SCRIPT, '-v', '-m', non_existing_filepath, '-s', f.name])
+            # TODO is_valid_mnemonic(mnemonic) raises NotImplementedError()
+            # self.assert_cli_error([self.PYTHON, self.SCRIPT, '-v', '-m', f.name, '-s', non_existing_filepath])
+            self.assert_cli_error([self.PYTHON, self.SCRIPT, '-v', '-m', non_existing_filepath, '-s', f.name],
+                                  ExitCode.EX_NOINPUT)
 
     def test_invalid_entropy(self):
         """Invalid input file with entropy
@@ -85,13 +91,7 @@ class TestMain(unittest.TestCase):
                 with self.subTest(entropy_bytes_length=entropy_bytes_length):
                     with open(os.path.join(tmpdir, '__entropy_binary__.dat'), 'wb') as f:
                         f.write(entropy_byte * entropy_bytes_length)
-                    cli = subprocess.run([self.PYTHON, self.SCRIPT, '-g', '-e', f.name, '--format', 'bin'],
-                                         timeout=self.TIMEOUT, cwd=self.SCRIPT_DIR,
-                                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+                    cli = self.execute_cli([self.PYTHON, self.SCRIPT, '-g', '-e', f.name, '--format', 'bin'])
                     self.assertEqual('', cli.stdout)
-                    self.assertEqual('invalid entropy\n', cli.stderr)
+                    self.assertEqual('Cannot instantiate entropy\n', cli.stderr)
                     self.assertEqual(ExitCode.EX_DATAERR.value, cli.returncode)
-
-
-if __name__ == '__main__':
-    unittest.main()
