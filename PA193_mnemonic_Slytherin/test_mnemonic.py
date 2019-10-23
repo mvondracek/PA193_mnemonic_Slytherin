@@ -225,8 +225,7 @@ class TestMnemonic(TestCase):
     """Tests Mnemonic
     TODO test private methods, Invalid arguments
     """
-
-    def test_correct_instance(self):
+    def test___init__(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             try:
                 Mnemonic(test_vector[1])
