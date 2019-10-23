@@ -281,6 +281,23 @@ class TestMnemonic(TestCase):
                 entropy_expected = Entropy(unhexlify(test_vector[0]))
                 self.assertEqual(entropy_expected, mnemonic.toEntropy())
 
+    def test_toEntropy_deep_copy(self):
+        m = Mnemonic('abandon abandon abandon abandon abandon abandon'
+                     ' abandon abandon abandon abandon abandon about')
+        self.assertIsNot(m.toEntropy(),
+                         m.toEntropy())
+        self.assertEqual(m.toEntropy(),
+                         m.toEntropy())
+        e_from_m = m.toEntropy()  # returns new Entropy
+
+        self.assertIsNot(e_from_m.toMnemonic(),
+                         e_from_m.toMnemonic())
+        self.assertEqual(e_from_m.toMnemonic(),
+                         e_from_m.toMnemonic())
+        m_from_e_from_m = e_from_m.toMnemonic()  # returns new Mnemonic
+        self.assertIsNot(m_from_e_from_m, m)
+        self.assertEqual(m_from_e_from_m, m)
+
 
 class TestSeed(TestCase):
     """Tests Seed"""
@@ -359,6 +376,22 @@ class TestEntropy(TestCase):
             entropy = Entropy(unhexlify(test_vector[0]))
             mnemonic_expected = Mnemonic(test_vector[1])
             self.assertEqual(mnemonic_expected, entropy.toMnemonic())
+
+    def test_toMnemonic_deep_copy(self):
+        e = Entropy(unhexlify('00000000000000000000000000000000'))
+        self.assertIsNot(e.toMnemonic(),
+                         e.toMnemonic())
+        self.assertEqual(e.toMnemonic(),
+                         e.toMnemonic())
+        m_from_e = e.toMnemonic()  # returns new Mnemonic
+
+        self.assertIsNot(m_from_e.toEntropy(),
+                         m_from_e.toEntropy())
+        self.assertEqual(m_from_e.toEntropy(),
+                         m_from_e.toEntropy())
+        e_from_m_from_e = m_from_e.toEntropy()  # returns new Entropy
+        self.assertIsNot(e_from_m_from_e, e)
+        self.assertEqual(e_from_m_from_e, e)
 
 
 if __name__ == '__main__':

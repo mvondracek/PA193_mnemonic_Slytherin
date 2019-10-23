@@ -12,8 +12,9 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 import hmac
 import logging
 import os
+from copy import deepcopy
 from hashlib import pbkdf2_hmac, sha256
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 __author__ = 'Team Slytherin: @sobuch, @lsolodkova, @mvondracek.'
 
@@ -108,6 +109,7 @@ class Entropy(bytes, dictionaryAccess):
 
         if not isinstance(entropy, bytes) or len(entropy) not in (16, 20, 24, 28, 32):
             raise ValueError('Cannot instantiate entropy')
+        self.__mnemonic: Optional[Mnemonic] = None
         self = entropy
 
     def checksum(self) -> int:
@@ -130,17 +132,19 @@ class Entropy(bytes, dictionaryAccess):
         into groups of 11 bits, each encoding a number from 0-2047, serving as an index into a
         wordlist.'
         """
-        shift = len(self) // 4
-        checksum = self.checksum()
+        if not self.__mnemonic:
+            shift = len(self) // 4
+            checksum = self.checksum()
 
-        # Concatenated bits representing the indexes
-        indexes_bin = (int.from_bytes(self, byteorder='big') << shift) | checksum
+            # Concatenated bits representing the indexes
+            indexes_bin = (int.from_bytes(self, byteorder='big') << shift) | checksum
 
-        # List of indexes, number of which is MS = (ENT + CS) / 11 == shift * 3
-        indexes = [(indexes_bin >> i * 11) & 2047 for i in reversed(range(shift * 3))]
+            # List of indexes, number of which is MS = (ENT + CS) / 11 == shift * 3
+            indexes = [(indexes_bin >> i * 11) & 2047 for i in reversed(range(shift * 3))]
 
-        words = [self._dict_list[i] for i in indexes]
-        return Mnemonic(' '.join(words))
+            words = [self._dict_list[i] for i in indexes]
+            self.__mnemonic = Mnemonic(' '.join(words))
+        return deepcopy(self.__mnemonic)
 
 
 class Mnemonic(str, dictionaryAccess):
@@ -250,7 +254,7 @@ class Mnemonic(str, dictionaryAccess):
         :rtype: Entropy
         :return: entropy
         """
-        return self.__entropy
+        return deepcopy(self.__entropy)
 
 
 def generate(entropy: Entropy, seed_password: str = '') -> Tuple[Mnemonic, Seed]:
