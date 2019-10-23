@@ -202,8 +202,13 @@ class TestMnemonic(TestCase):
     TODO test private methods, Invalid arguments
     """
     def test___init__(self):
+        whitespaces = ['\t', '\n', '\x0b', '\x0c', '\r', ' ', '\x85', '\xa0', '\u1680', '\u2000', '\u2001', '\u2002',
+                       '\u2003', '\u2004', '\u2005', '\u2006', '\u2007', '\u2008', '\u2009', '\u200a', '\u2028',
+                       '\u2029', '\u202f', '\u205f', '\u3000']
         for test_vector in TREZOR_TEST_VECTORS['english']:
             Mnemonic(test_vector[1])
+            for whitespace in whitespaces:
+                Mnemonic(whitespace + test_vector[1] + whitespace)
 
     def test___init___too_long_str(self):
         """Too long mnemonic phrase."""
