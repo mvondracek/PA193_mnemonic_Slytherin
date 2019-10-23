@@ -17,30 +17,6 @@ from PA193_mnemonic_Slytherin.mnemonic import Entropy, Mnemonic, Seed
 from PA193_mnemonic_Slytherin.mnemonic import generate, recover, verify
 
 
-# TODO add more tests or remove section
-class TestMnemonicInternal(TestCase):
-    def test_secure_seed_compare(self):
-        seed = b'\x27\x4d\xdc\x52\x58\x02\xf7\xc8\x28\xd8\xef\x7d\xdb\xcd\xc5' \
-               b'\x30\x4e\x87\xac\x35\x35\x91\x36\x11\xfb\xbf\xa9\x86\xd0\xc9' \
-               b'\xe5\x47\x6c\x91\x68\x9f\x9c\x8a\x54\xfd\x55\xbd\x38\x60\x6a' \
-               b'\xa6\xa8\x59\x5a\xd2\x13\xd4\xc9\xc9\xf9\xac\xa3\xfb\x21\x70' \
-               b'\x69\xa4\x10\x28'
-        self.assertTrue(Seed(seed) == Seed(seed))
-        """self.assertTrue(_secure_seed_compare(Seed(b''), Seed(b''))) # incorrect seed  -> exception
-        wself.assertFalse(_secure_seed_compare(Seed(seed), Seed(b'\x00'))) # incorrect seed  -> exception
-        self.assertFalse(_secure_seed_compare(Seed(b'\x00'), Seed(seed))) # incorrect seed  -> exception
-        self.assertFalse(_secure_seed_compare(Seed(seed), Seed(b''))) # incorrect seed  -> exception
-        with self.assertRaises(ValueError):# incorrect type  -> TypeError
-            # noinspection PyTypeChecker
-            Seed(seed) == Seed(None)
-        with self.assertRaises(ValueError):
-            # noinspection PyTypeChecker
-            Seed(None) == Seed(seed)
-        with self.assertRaises(ValueError):
-            # noinspection PyTypeChecker
-            Seed('text') == Seed('text')"""
-
-
 # Test vectors by Trezor. Organized as entropy, mnemonic, seed, xprv
 # https://github.com/trezor/python-mnemonic/blob/master/vectors.json
 TREZOR_PASSWORD = 'TREZOR'
@@ -255,6 +231,25 @@ class TestSeed(TestCase):
         for test in test_cases_value:
             with self.assertRaises(ValueError):
                 Seed(test)
+
+    def test___eq__(self):
+        a1 = int.to_bytes(1, 64, 'little')
+        a2 = int.to_bytes(1, 64, 'little')
+        b = int.to_bytes(255, 64, 'little')
+        self.assertEqual(a1, a2)
+        self.assertIsNot(a1, a2)
+        # a, b are not identical, but compare to same value
+
+        s1 = Seed(a1)
+        self.assertTrue(s1 == s1)
+        self.assertTrue(Seed(a1) == Seed(a1))
+        self.assertTrue(Seed(a1) == Seed(a2))
+
+        self.assertFalse(Seed(a1) == Seed(b))
+        """
+        with self.assertRaises(ValueError):
+            # noinspection PyTypeChecker
+            Seed('text') == Seed('text')"""
 
 
 class TestEntropy(TestCase):
