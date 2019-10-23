@@ -214,6 +214,13 @@ class TestMnemonic(TestCase):
 class TestSeed(TestCase):
     """Tests Seed instantiation. TODO test private methods
     """
+    def setUp(self) -> None:
+        self.seed_bytes_a1 = int.to_bytes(1, 64, 'little')
+        self.seed_bytes_a2 = int.to_bytes(1, 64, 'little')
+        self.assertEqual(self.seed_bytes_a1, self.seed_bytes_a2)
+        self.assertIsNot(self.seed_bytes_a1, self.seed_bytes_a2)
+        # `self.seed_bytes_a1`, `self.seed_bytes_a2` are not identical, but compare to same value
+        self.seed_bytes_b = int.to_bytes(255, 64, 'little')
 
     def test_correct_instance(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
@@ -233,19 +240,12 @@ class TestSeed(TestCase):
                 Seed(test)
 
     def test___eq__(self):
-        a1 = int.to_bytes(1, 64, 'little')
-        a2 = int.to_bytes(1, 64, 'little')
-        b = int.to_bytes(255, 64, 'little')
-        self.assertEqual(a1, a2)
-        self.assertIsNot(a1, a2)
-        # a, b are not identical, but compare to same value
-
-        s1 = Seed(a1)
+        s1 = Seed(self.seed_bytes_a1)
         self.assertTrue(s1 == s1)
-        self.assertTrue(Seed(a1) == Seed(a1))
-        self.assertTrue(Seed(a1) == Seed(a2))
+        self.assertTrue(Seed(self.seed_bytes_a1) == Seed(self.seed_bytes_a1))
+        self.assertTrue(Seed(self.seed_bytes_a1) == Seed(self.seed_bytes_a2))
+        self.assertFalse(Seed(self.seed_bytes_a1) == Seed(self.seed_bytes_b))
 
-        self.assertFalse(Seed(a1) == Seed(b))
 
 
 class TestEntropy(TestCase):
