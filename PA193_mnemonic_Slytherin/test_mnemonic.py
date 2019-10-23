@@ -246,10 +246,6 @@ class TestSeed(TestCase):
         self.assertTrue(Seed(a1) == Seed(a2))
 
         self.assertFalse(Seed(a1) == Seed(b))
-        """
-        with self.assertRaises(ValueError):
-            # noinspection PyTypeChecker
-            Seed('text') == Seed('text')"""
 
 
 class TestEntropy(TestCase):
