@@ -227,10 +227,7 @@ class TestMnemonic(TestCase):
     """
     def test___init__(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
-            try:
-                Mnemonic(test_vector[1])
-            except ValueError:
-                self.fail("Instantiation failed unexpectedly!")
+            Mnemonic(test_vector[1])
 
     def test___init___too_long_str(self):
         """Too long mnemonic phrase."""
@@ -244,10 +241,7 @@ class TestSeed(TestCase):
 
     def test_correct_instance(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
-            try:
-                Seed(unhexlify(test_vector[2]))
-            except ValueError:
-                self.fail("Instantiation failed unexpectedly!")
+            Seed(unhexlify(test_vector[2]))
 
     def test_invalid_argument(self):
         test_cases_type = [None, '', '1234567890abcd', 'NonHexaString_!?', [b'']]
@@ -269,10 +263,7 @@ class TestEntropy(TestCase):
 
     def test_correct_instance(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
-            try:
-                Entropy(unhexlify(test_vector[0]))
-            except ValueError:
-                self.fail("Instantiation failed unexpectedly!")
+            Entropy(unhexlify(test_vector[0]))
 
     def test_invalid_argument(self):
         test_cases_type = [None, '', '1234567890abcd', 'NonHexaString_!?', [b'']]
