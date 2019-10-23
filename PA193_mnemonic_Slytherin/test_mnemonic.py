@@ -276,6 +276,13 @@ class TestEntropy(TestCase):
             with self.assertRaises(ValueError):
                 Entropy(test)
 
+    def test_checksum(self):
+        for test_vector in TREZOR_TEST_VECTORS['english']:
+            with self.subTest(entropy=test_vector[0]):
+                checksum_from_mnemonic = Mnemonic.checksum(test_vector[1])
+                entropy = Entropy(unhexlify(test_vector[0]))
+                self.assertEqual(checksum_from_mnemonic, entropy.checksum())
+
 
 if __name__ == '__main__':
     unittest.main()
