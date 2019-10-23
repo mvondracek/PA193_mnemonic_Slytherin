@@ -229,7 +229,8 @@ class TestSeed(TestCase):
         test_cases_type = [None, '', '1234567890abcd', 'NonHexaString_!?', [b'']]
         for test in test_cases_type:
             with self.assertRaises(TypeError):
-                Seed(test)
+                # noinspection PyTypeChecker
+                Seed(test)  # type: ignore
 
         test_cases_value = [b'', b'tooShort', b'63bytesLongSoExactlyOneByteShortOfBeingValidSoCloseYetSoFarSAD!',
                             b'soLongItHurtsHurDurBlaBlaButAnywayThisShouldFail123456789101112131415', 0, 123,
