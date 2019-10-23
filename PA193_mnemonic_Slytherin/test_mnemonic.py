@@ -212,8 +212,7 @@ class TestMnemonic(TestCase):
 
 
 class TestSeed(TestCase):
-    """Tests Seed instantiation. TODO test private methods
-    """
+    """Tests Seed"""
     def setUp(self) -> None:
         self.seed_bytes_a1 = int.to_bytes(1, 64, 'little')
         self.seed_bytes_a2 = int.to_bytes(1, 64, 'little')
