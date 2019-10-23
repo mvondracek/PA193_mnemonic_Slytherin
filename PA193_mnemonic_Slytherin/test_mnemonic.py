@@ -211,22 +211,42 @@ class TestMnemonic(TestCase):
                 Mnemonic(whitespace + test_vector[1] + whitespace)
 
     def test___init___invalid_argument(self):
-        for mnemonic_phrase_text in [None, 1, b'\xff', b'text as bytes not str', ['text in a list']]:
-            with self.assertRaises(TypeError):
-                # noinspection PyTypeChecker
-                Mnemonic(mnemonic_phrase_text)  # type: ignore
+        for test_input in [None, 1, b'\xff', b'text as bytes not str', ['text in a list']]:
+            with self.subTest(test_input=test_input):
+                with self.assertRaisesRegex(TypeError, r'argument `mnemonic` should be str'):
+                    # noinspection PyTypeChecker
+                    Mnemonic(test_input)  # type: ignore
 
         test_inputs = [
             '',
-            'test_ string_ not_ in_ dictionary_',
-            'あいいここあくしんん',
-            'not_in_dictionary ' * 12,
-            'abandon ' * 12,
+            'abandon ' * 11,
             TREZOR_TEST_VECTORS['english'][0][1] + ' abandon',
             ]
         for test_input in test_inputs:
-            with self.assertRaises(ValueError):
-                Mnemonic(test_input)
+            with self.subTest(test_input=test_input):
+                with self.assertRaisesRegex(ValueError, r'argument `mnemonic` has invalid number of words'):
+                    Mnemonic(test_input)
+
+        test_inputs = [
+            'test_ string_ not_ in_ dictionary_ test_ string_ not_ in_ dictionary_ test_ test_',
+            'あいいここあくしんん ' * 12,
+            'not_in_dictionary ' * 12,
+            ]
+        for test_input in test_inputs:
+            with self.subTest(test_input=test_input):
+                with self.assertRaisesRegex(ValueError, r'argument `mnemonic` contains word (.+) which is not in '
+                                                        r'current dictionary'):
+                    Mnemonic(test_input)
+
+        test_inputs = [
+            'abandon ' * 12,
+            ' '.join(TREZOR_TEST_VECTORS['english'][1][1].split()[:-1] + [' abandon']),  # last word replaced
+            ]
+        for test_input in test_inputs:
+            with self.subTest(test_input=test_input):
+                with self.assertRaisesRegex(ValueError,
+                                            r'argument `mnemonic` includes checksum \d+ different from computed \d+'):
+                    Mnemonic(test_input)
 
     def test___init___too_long_str(self):
         """Too long mnemonic phrase."""
