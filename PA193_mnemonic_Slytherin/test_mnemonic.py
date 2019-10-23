@@ -277,7 +277,6 @@ class TestSeed(TestCase):
         self.assertTrue(Seed(self.seed_bytes_a1) != Seed(self.seed_bytes_b))
 
 
-
 class TestEntropy(TestCase):
     """Tests Entropy"""
 
