@@ -171,9 +171,8 @@ TREZOR_TEST_VECTORS = {
 }
 
 
-# PUBLIC FUNCTION TESTS
-class TestMnemonicPublic(TestCase):
-    """Tests for public part of mnemonic module (public API).
+class TestPublicFunctions(TestCase):
+    """Tests for public functions of mnemonic module.
     Tests for `generate`, `recover`, and `verify` are similar, but we want to
     test each function separately.
     TODO add testing for incorrect inputs
@@ -196,7 +195,7 @@ class TestMnemonicPublic(TestCase):
             self.assertTrue(verify(Mnemonic(test_vector[1]), Seed(unhexlify(test_vector[2])), TREZOR_PASSWORD))
 
 
-# PUBLIC CLASS TESTS - TODO add more test (different from Trezor vector)
+# TODO add more tests (different from Trezor vector)
 class TestMnemonic(TestCase):
     """Tests Mnemonic"""
     def test___init__(self):
