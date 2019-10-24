@@ -171,9 +171,8 @@ TREZOR_TEST_VECTORS = {
 }
 
 
-# PUBLIC FUNCTION TESTS
-class TestMnemonicPublic(TestCase):
-    """Tests for public part of mnemonic module (public API).
+class TestPublicFunctions(TestCase):
+    """Tests for public functions of mnemonic module.
     Tests for `generate`, `recover`, and `verify` are similar, but we want to
     test each function separately.
     TODO add testing for incorrect inputs
@@ -196,11 +195,9 @@ class TestMnemonicPublic(TestCase):
             self.assertTrue(verify(Mnemonic(test_vector[1]), Seed(unhexlify(test_vector[2])), TREZOR_PASSWORD))
 
 
-# PUBLIC CLASS TESTS - TODO add more test (different from Trezor vector)
+# TODO add more tests (different from Trezor vector)
 class TestMnemonic(TestCase):
-    """Tests Mnemonic
-    TODO test private methods, Invalid arguments
-    """
+    """Tests Mnemonic"""
     def test___init__(self):
         whitespaces = ['\t', '\n', '\x0b', '\x0c', '\r', ' ', '\x85', '\xa0', '\u1680', '\u2000', '\u2001', '\u2002',
                        '\u2003', '\u2004', '\u2005', '\u2006', '\u2007', '\u2008', '\u2009', '\u200a', '\u2028',
@@ -211,27 +208,95 @@ class TestMnemonic(TestCase):
                 Mnemonic(whitespace + test_vector[1] + whitespace)
 
     def test___init___invalid_argument(self):
-        for mnemonic_phrase_text in [None, 1, b'\xff', b'text as bytes not str', ['text in a list']]:
-            with self.assertRaises(ValueError):
-                # noinspection PyTypeChecker
-                Mnemonic(mnemonic_phrase_text)  # type: ignore
+        for test_input in [None, 1, b'\xff', b'text as bytes not str', ['text in a list']]:
+            with self.subTest(test_input=test_input):
+                with self.assertRaisesRegex(TypeError, r'argument `mnemonic` should be str'):
+                    # noinspection PyTypeChecker
+                    Mnemonic(test_input)  # type: ignore
 
         test_inputs = [
             '',
-            'test_ string_ not_ in_ dictionary_',
-            'あいいここあくしんん',
-            'not_in_dictionary ' * 12,
-            'abandon ' * 12,
+            'abandon ' * 11,
             TREZOR_TEST_VECTORS['english'][0][1] + ' abandon',
             ]
         for test_input in test_inputs:
-            with self.assertRaises(ValueError):
-                Mnemonic(test_input)
+            with self.subTest(test_input=test_input):
+                with self.assertRaisesRegex(ValueError, r'argument `mnemonic` has invalid number of words'):
+                    Mnemonic(test_input)
+
+        test_inputs = [
+            'test_ string_ not_ in_ dictionary_ test_ string_ not_ in_ dictionary_ test_ test_',
+            'あいいここあくしんん ' * 12,
+            'not_in_dictionary ' * 12,
+            ]
+        for test_input in test_inputs:
+            with self.subTest(test_input=test_input):
+                with self.assertRaisesRegex(ValueError, r'argument `mnemonic` contains word (.+) which is not in '
+                                                        r'current dictionary'):
+                    Mnemonic(test_input)
+
+        test_inputs = [
+            'abandon ' * 12,
+            ' '.join(TREZOR_TEST_VECTORS['english'][1][1].split()[:-1] + [' abandon']),  # last word replaced
+            ]
+        for test_input in test_inputs:
+            with self.subTest(test_input=test_input):
+                with self.assertRaisesRegex(ValueError,
+                                            r'argument `mnemonic` includes checksum \d+ different from computed \d+'):
+                    Mnemonic(test_input)
 
     def test___init___too_long_str(self):
         """Too long mnemonic phrase."""
         with self.assertRaises(ValueError):
             Mnemonic('a' * 1024 * 1024 * 1024 * 2)  # 2 GB
+
+    def test_checksum(self):
+        # TODO Could we check `Mnemonic.checksum` without `Entropy.checksum`? See `TestEntropy.test_checksum`.
+        for test_vector in TREZOR_TEST_VECTORS['english']:
+            with self.subTest(mnemonic=test_vector[1]):
+                entropy = Entropy(unhexlify(test_vector[0]))
+                checksum = Mnemonic.checksum(test_vector[1])
+                self.assertEqual(entropy.checksum(), checksum)
+
+    def test_toSeed(self):
+        for test_vector in TREZOR_TEST_VECTORS['english']:
+            with self.subTest(mnemonic=test_vector[1]):
+                mnemonic = Mnemonic(test_vector[1])
+                seed_expected = Seed(unhexlify(test_vector[2]))
+                self.assertEqual(seed_expected, mnemonic.to_seed(TREZOR_PASSWORD))
+
+    def test_toSeed_invalid_password(self):
+        for password in [None, 1, ['text in array'], b'text as bytes']:
+            with self.subTest(password=password):
+                mnemonic = Mnemonic('abandon abandon abandon abandon abandon abandon'
+                                    ' abandon abandon abandon abandon abandon about')
+                with self.assertRaisesRegex(TypeError, r'argument `seed_password` should be str'):
+                    # noinspection PyTypeChecker
+                    mnemonic.to_seed(password)  # type: ignore
+
+    def test_toEntropy(self):
+        for test_vector in TREZOR_TEST_VECTORS['english']:
+            with self.subTest(mnemonic=test_vector[1]):
+                mnemonic = Mnemonic(test_vector[1])
+                entropy_expected = Entropy(unhexlify(test_vector[0]))
+                self.assertEqual(entropy_expected, mnemonic.to_entropy())
+
+    def test_toEntropy_deep_copy(self):
+        m = Mnemonic('abandon abandon abandon abandon abandon abandon'
+                     ' abandon abandon abandon abandon abandon about')
+        self.assertIsNot(m.to_entropy(),
+                         m.to_entropy())
+        self.assertEqual(m.to_entropy(),
+                         m.to_entropy())
+        e_from_m = m.to_entropy()  # returns new Entropy
+
+        self.assertIsNot(e_from_m.to_mnemonic(),
+                         e_from_m.to_mnemonic())
+        self.assertEqual(e_from_m.to_mnemonic(),
+                         e_from_m.to_mnemonic())
+        m_from_e_from_m = e_from_m.to_mnemonic()  # returns new Mnemonic
+        self.assertIsNot(m_from_e_from_m, m)
+        self.assertEqual(m_from_e_from_m, m)
 
 
 class TestSeed(TestCase):
@@ -277,20 +342,19 @@ class TestSeed(TestCase):
         self.assertTrue(Seed(self.seed_bytes_a1) != Seed(self.seed_bytes_b))
 
 
-
 class TestEntropy(TestCase):
-    """Tests Entropy instantiation. TODO test private methods
-    """
+    """Tests Entropy"""
 
-    def test_correct_instance(self):
+    def test___init__(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             Entropy(unhexlify(test_vector[0]))
 
-    def test_invalid_argument(self):
+    def test___init___invalid_argument(self):
         test_cases_type = [None, '', '1234567890abcd', 'NonHexaString_!?', [b'']]
         for test in test_cases_type:
             with self.assertRaises(TypeError):
-                Entropy(test)
+                # noinspection PyTypeChecker
+                Entropy(test)  # type: ignore
 
         test_cases_value = [b'', b'tooShort', b'Well26BytesIsNotGonnaCutIT', b'Not15neitherLol',
                             b'soLongItHurtsHurDurBlaBlaButAnywayThisShouldFail123456789101112131415', 0, 123,
@@ -298,6 +362,36 @@ class TestEntropy(TestCase):
         for test in test_cases_value:
             with self.assertRaises(ValueError):
                 Entropy(test)
+
+    def test_checksum(self):
+        # TODO Could we check `Entropy.checksum` without `Mnemonic.checksum`? See `TestMnemonic.test_checksum`.
+        for test_vector in TREZOR_TEST_VECTORS['english']:
+            with self.subTest(entropy=test_vector[0]):
+                checksum_from_mnemonic = Mnemonic.checksum(test_vector[1])
+                entropy = Entropy(unhexlify(test_vector[0]))
+                self.assertEqual(checksum_from_mnemonic, entropy.checksum())
+
+    def test_toMnemonic(self):
+        for test_vector in TREZOR_TEST_VECTORS['english']:
+            entropy = Entropy(unhexlify(test_vector[0]))
+            mnemonic_expected = Mnemonic(test_vector[1])
+            self.assertEqual(mnemonic_expected, entropy.to_mnemonic())
+
+    def test_toMnemonic_deep_copy(self):
+        e = Entropy(unhexlify('00000000000000000000000000000000'))
+        self.assertIsNot(e.to_mnemonic(),
+                         e.to_mnemonic())
+        self.assertEqual(e.to_mnemonic(),
+                         e.to_mnemonic())
+        m_from_e = e.to_mnemonic()  # returns new Mnemonic
+
+        self.assertIsNot(m_from_e.to_entropy(),
+                         m_from_e.to_entropy())
+        self.assertEqual(m_from_e.to_entropy(),
+                         m_from_e.to_entropy())
+        e_from_m_from_e = m_from_e.to_entropy()  # returns new Entropy
+        self.assertIsNot(e_from_m_from_e, e)
+        self.assertEqual(e_from_m_from_e, e)
 
 
 if __name__ == '__main__':
