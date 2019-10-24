@@ -84,7 +84,7 @@ class TestMain(unittest.TestCase):
             # binary input file
             # basic byte of entropy for this test
             entropy_byte = b'\x01'
-            valid_entropy_bytes_lengths = list(range(16, 32 + 1, 4))
+            valid_entropy_bytes_lengths = (16, 20, 24, 28, 32)
             for entropy_bytes_length in range(0, 40):
                 if entropy_bytes_length in valid_entropy_bytes_lengths:
                     continue
