@@ -127,8 +127,6 @@ class TestMain(unittest.TestCase):
 
             with open(os.path.join(tmpdir, '__this_file_exists__.txt'), 'w') as f:
                 f.write('foo bar')
-            # TODO is_valid_mnemonic(mnemonic) raises NotImplementedError()
-            # self.assert_cli_error([self.PYTHON, self.SCRIPT, '-v', '-m', f.name, '-s', non_existing_filepath])
             self.assert_program_error([self.SCRIPT, '-v', '-m', non_existing_filepath, '-s', f.name],
                                       ExitCode.EX_NOINPUT)
 
