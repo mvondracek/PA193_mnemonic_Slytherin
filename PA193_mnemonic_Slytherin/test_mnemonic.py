@@ -333,6 +333,7 @@ class TestSeed(TestCase):
         self.assertTrue(Seed(self.seed_bytes_a1) == Seed(self.seed_bytes_a1))
         self.assertTrue(Seed(self.seed_bytes_a1) == Seed(self.seed_bytes_a2))
         self.assertFalse(Seed(self.seed_bytes_a1) == Seed(self.seed_bytes_b))
+        self.assertFalse(s1 == [1, 2, 3])
 
     def test__ne__(self):
         s1 = Seed(self.seed_bytes_a1)
@@ -340,6 +341,7 @@ class TestSeed(TestCase):
         self.assertFalse(Seed(self.seed_bytes_a1) != Seed(self.seed_bytes_a1))
         self.assertFalse(Seed(self.seed_bytes_a1) != Seed(self.seed_bytes_a2))
         self.assertTrue(Seed(self.seed_bytes_a1) != Seed(self.seed_bytes_b))
+        self.assertTrue(s1 != [1, 2, 3])
 
 
 class TestEntropy(TestCase):
