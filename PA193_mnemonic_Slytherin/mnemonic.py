@@ -109,7 +109,7 @@ class Entropy(bytes, _DictionaryAccess):
             raise ValueError('Cannot instantiate entropy')
         super().__init__()
         _DictionaryAccess.__init__(self)
-        self.__mnemonic: Optional[Mnemonic] = None
+        self.__mnemonic = None  # type: Optional[Mnemonic]
 
     def checksum(self) -> int:
         """Calculate checksum of this entropy based on its length
