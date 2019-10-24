@@ -50,8 +50,8 @@ class TestMain(unittest.TestCase):
             self.assertNotEqual('', cli.stderr)
         self.assertEqual(exitcode.value, cli.returncode)
 
-    def assert_program_inside_tests(self, args: List[str], exitcode: ExitCode,
-                                    stdout_check: Optional[str] = None, stderr_check: Optional[str] = None):
+    def assert_program_entry_point(self, args: List[str], exitcode: ExitCode,
+                                   stdout_check: Optional[str] = None, stderr_check: Optional[str] = None):
         """Run program directly from the test for counted test coverage and assert its result.
         :param args: arguments for the program
         :param exitcode: expected exit code
@@ -85,7 +85,7 @@ class TestMain(unittest.TestCase):
         """
         self.assert_program_cli(args, exitcode, stdout_check, stderr_check)
         # Execute program inside this test now, because test coverage is not counted when we execute CLI as subprocess.
-        self.assert_program_inside_tests(args, exitcode, stdout_check, stderr_check)
+        self.assert_program_entry_point(args, exitcode, stdout_check, stderr_check)
 
     def assert_program_error(self, args: List[str], exitcode: ExitCode):
         self.assert_program(args, exitcode, stdout_check='', stderr_check=None)
@@ -150,5 +150,3 @@ class TestMain(unittest.TestCase):
                         f.write(entropy_byte * entropy_bytes_length)
                     self.assert_program([self.SCRIPT, '-g', '-e', f.name, '--format', 'bin'], ExitCode.EX_DATAERR,
                                         stdout_check='', stderr_check=None)
-
-
