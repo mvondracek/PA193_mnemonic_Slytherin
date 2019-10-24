@@ -203,9 +203,9 @@ class Config(object):
         return config
 
 
-def cli_entry_point():
+def cli_entry_point(argv=sys.argv):
     try:
-        exit_code = main(sys.argv)
+        exit_code = main(argv)
     except KeyboardInterrupt:
         print('Stopping.')
         logger.warning('received KeyboardInterrupt, stopping')

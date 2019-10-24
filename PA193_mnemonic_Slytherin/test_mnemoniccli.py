@@ -12,9 +12,12 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 import os
 import subprocess
 import unittest
+from io import StringIO
+from contextlib import redirect_stdout, redirect_stderr
 from tempfile import TemporaryDirectory
+from typing import Optional, List
 
-from PA193_mnemonic_Slytherin.mnemoniccli import ExitCode
+from PA193_mnemonic_Slytherin.mnemoniccli import ExitCode, cli_entry_point
 
 
 class TestMain(unittest.TestCase):
@@ -24,54 +27,110 @@ class TestMain(unittest.TestCase):
     SCRIPT = 'mnemoniccli.py'
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-    def execute_cli(self, args):
-        return subprocess.run(args, timeout=self.TIMEOUT, cwd=self.SCRIPT_DIR,
+    def execute_cli(self, args: List[str]):
+        return subprocess.run([self.PYTHON] + args, timeout=self.TIMEOUT, cwd=self.SCRIPT_DIR,
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
 
-    def assert_cli_error(self, args, exitcode: ExitCode):
+    def assert_program_cli(self, args: List[str], exitcode: ExitCode,
+                           stdout_check: Optional[str] = None, stderr_check: Optional[str] = None):
+        """Run CLI program and assert its result.
+        :param args: arguments for the program
+        :param exitcode: expected exit code
+        :param stdout_check: String with which `stdout` should be compared, `None` if `stdout` should not be empty.
+        :param stderr_check: String with which `stderr` should be compared, `None` if `stderr` should not be empty.
+        """
         cli = self.execute_cli(args)
-        self.assertEqual('', cli.stdout)
-        self.assertNotEqual('', cli.stderr)
+        if stdout_check is not None:
+            self.assertEqual(stdout_check, cli.stdout)
+        else:
+            self.assertNotEqual('', cli.stdout)
+        if stderr_check is not None:
+            self.assertEqual(stderr_check, cli.stderr)
+        else:
+            self.assertNotEqual('', cli.stderr)
         self.assertEqual(exitcode.value, cli.returncode)
 
-    def assert_cli_success(self, args):
-        cli = self.execute_cli(args)
-        self.assertNotEqual('', cli.stdout)
-        self.assertEqual('', cli.stderr)
-        self.assertEqual(ExitCode.EX_OK.value, cli.returncode)
+    def assert_program_inside_tests(self, args: List[str], exitcode: ExitCode,
+                                    stdout_check: Optional[str] = None, stderr_check: Optional[str] = None):
+        """Run program directly from the test for counted test coverage and assert its result.
+        :param args: arguments for the program
+        :param exitcode: expected exit code
+        :param stdout_check: String with which `stdout` should be compared, `None` if `stdout` should not be empty.
+        :param stderr_check: String with which `stderr` should be compared, `None` if `stderr` should not be empty.
+        """
+        stdout_redirected = StringIO()
+        stderr_redirected = StringIO()
+        with redirect_stdout(stdout_redirected), redirect_stderr(stderr_redirected):
+            with self.assertRaises(SystemExit) as cm:
+                cli_entry_point(args)  # remove `python` from args
+        if stdout_check is not None:
+            self.assertEqual(stdout_check, stdout_redirected.getvalue())
+        else:
+            self.assertNotEqual('', stdout_redirected.getvalue())
+        if stderr_check is not None:
+            self.assertEqual(stderr_check, stderr_redirected.getvalue())
+        else:
+            self.assertNotEqual('', stderr_redirected.getvalue())
+        self.assertEqual(exitcode.value, cm.exception.args[0])
+
+    def assert_program(self, args: List[str], exitcode: ExitCode,
+                       stdout_check: Optional[str] = None, stderr_check: Optional[str] = None):
+        """Run program and assert its result.
+        Runs program twice, first time using subprocess for more realistic behaviour from command line and then directly
+        from the test for counted test coverage.
+        :param args: arguments for the program
+        :param exitcode: expected exit code
+        :param stdout_check: String with which `stdout` should be compared, `None` if `stdout` should not be empty.
+        :param stderr_check: String with which `stderr` should be compared, `None` if `stderr` should not be empty.
+        """
+        self.assert_program_cli(args, exitcode, stdout_check, stderr_check)
+        # Execute program inside this test now, because test coverage is not counted when we execute CLI as subprocess.
+        self.assert_program_inside_tests(args, exitcode, stdout_check, stderr_check)
+
+    def assert_program_error(self, args: List[str], exitcode: ExitCode):
+        self.assert_program(args, exitcode, stdout_check='', stderr_check=None)
+
+    def assert_program_success(self, args: List[str]):
+        self.assert_program(args, ExitCode.EX_OK, stdout_check=None, stderr_check='')
 
     def test_arguments_error(self):
         """invalid arguments"""
-        self.assert_cli_error([self.PYTHON, self.SCRIPT], ExitCode.ARGUMENTS)
-        self.assert_cli_error([self.PYTHON, self.SCRIPT, '-ll', 'FOO'], ExitCode.ARGUMENTS)
-        self.assert_cli_error([self.PYTHON, self.SCRIPT, '-g'], ExitCode.ARGUMENTS)
-        self.assert_cli_error([self.PYTHON, self.SCRIPT, '-r'], ExitCode.ARGUMENTS)
-        self.assert_cli_error([self.PYTHON, self.SCRIPT, '-v'], ExitCode.ARGUMENTS)
-        self.assert_cli_error([self.PYTHON, self.SCRIPT, '-g', '-r', '-v'], ExitCode.ARGUMENTS)
+        self.assert_program_error([self.SCRIPT], ExitCode.ARGUMENTS)
+        self.assert_program_error([self.SCRIPT, '-ll', 'FOO'], ExitCode.ARGUMENTS)
+        self.assert_program_error([self.SCRIPT, '-g'], ExitCode.ARGUMENTS)
+        self.assert_program_error([self.SCRIPT, '-r'], ExitCode.ARGUMENTS)
+        self.assert_program_error([self.SCRIPT, '-v'], ExitCode.ARGUMENTS)
+        self.assert_program_error([self.SCRIPT, '-v', '-m'], ExitCode.ARGUMENTS)
+        self.assert_program_error([self.SCRIPT, '-v', '-s'], ExitCode.ARGUMENTS)
+        self.assert_program_error([self.SCRIPT, '-g', '-r', '-v'], ExitCode.ARGUMENTS)
+        with TemporaryDirectory() as tmpdir:
+            non_existing_filepath = os.path.join(tmpdir, '__this_file_does_not_exist__')
+            self.assert_program_error([self.SCRIPT, '-v', '-m', non_existing_filepath], ExitCode.ARGUMENTS)
+            self.assert_program_error([self.SCRIPT, '-v', '-s', non_existing_filepath], ExitCode.ARGUMENTS)
 
     def test_arguments_ok_terminated(self):
         """correct argument resulting in termination"""
-        self.assert_cli_success([self.PYTHON, self.SCRIPT, '-h'])
-        self.assert_cli_success([self.PYTHON, self.SCRIPT, '--help'])
-        self.assert_cli_success([self.PYTHON, self.SCRIPT, '-V'])
-        self.assert_cli_success([self.PYTHON, self.SCRIPT, '--version'])
+        self.assert_program_success([self.SCRIPT, '-h'])
+        self.assert_program_success([self.SCRIPT, '--help'])
+        self.assert_program_success([self.SCRIPT, '-V'])
+        self.assert_program_success([self.SCRIPT, '--version'])
 
     def test_arguments_EX_NOINPUT(self):
         """input files don't exist"""
         with TemporaryDirectory() as tmpdir:
             non_existing_filepath = os.path.join(tmpdir, '__this_file_does_not_exist__')
-            self.assert_cli_error([self.PYTHON, self.SCRIPT, '-g', '-e', non_existing_filepath], ExitCode.EX_NOINPUT)
-            self.assert_cli_error([self.PYTHON, self.SCRIPT, '-r', '-m', non_existing_filepath], ExitCode.EX_NOINPUT)
-            self.assert_cli_error(
-                [self.PYTHON, self.SCRIPT, '-v', '-m', non_existing_filepath, '-s', non_existing_filepath],
+            self.assert_program_error([self.SCRIPT, '-g', '-e', non_existing_filepath], ExitCode.EX_NOINPUT)
+            self.assert_program_error([self.SCRIPT, '-r', '-m', non_existing_filepath], ExitCode.EX_NOINPUT)
+            self.assert_program_error(
+                [self.SCRIPT, '-v', '-m', non_existing_filepath, '-s', non_existing_filepath],
                 ExitCode.EX_NOINPUT)
 
             with open(os.path.join(tmpdir, '__this_file_exists__.txt'), 'w') as f:
                 f.write('foo bar')
             # TODO is_valid_mnemonic(mnemonic) raises NotImplementedError()
             # self.assert_cli_error([self.PYTHON, self.SCRIPT, '-v', '-m', f.name, '-s', non_existing_filepath])
-            self.assert_cli_error([self.PYTHON, self.SCRIPT, '-v', '-m', non_existing_filepath, '-s', f.name],
-                                  ExitCode.EX_NOINPUT)
+            self.assert_program_error([self.SCRIPT, '-v', '-m', non_existing_filepath, '-s', f.name],
+                                      ExitCode.EX_NOINPUT)
 
     def test_invalid_entropy(self):
         """Invalid input file with entropy
@@ -91,7 +150,7 @@ class TestMain(unittest.TestCase):
                 with self.subTest(entropy_bytes_length=entropy_bytes_length):
                     with open(os.path.join(tmpdir, '__entropy_binary__.dat'), 'wb') as f:
                         f.write(entropy_byte * entropy_bytes_length)
-                    cli = self.execute_cli([self.PYTHON, self.SCRIPT, '-g', '-e', f.name, '--format', 'bin'])
-                    self.assertEqual('', cli.stdout)
-                    self.assertEqual('Cannot instantiate entropy\n', cli.stderr)
-                    self.assertEqual(ExitCode.EX_DATAERR.value, cli.returncode)
+                    self.assert_program([self.SCRIPT, '-g', '-e', f.name, '--format', 'bin'], ExitCode.EX_DATAERR,
+                                        stdout_check='', stderr_check=None)
+
+
