@@ -26,7 +26,7 @@ PBKDF2_ROUNDS = 2048
 SEED_LEN = 64
 
 
-class DictionaryAccess:
+class _DictionaryAccess:
     """Abstract class for classes requiring dictionary access
     """
 
@@ -91,7 +91,7 @@ class Seed(bytes):
         return not (self == other)
 
 
-class Entropy(bytes, DictionaryAccess):
+class Entropy(bytes, _DictionaryAccess):
     """Class for entropy representation.
     """
 
@@ -108,7 +108,7 @@ class Entropy(bytes, DictionaryAccess):
         if not isinstance(entropy, bytes) or len(entropy) not in (16, 20, 24, 28, 32):
             raise ValueError('Cannot instantiate entropy')
         super().__init__()
-        DictionaryAccess.__init__(self)
+        _DictionaryAccess.__init__(self)
         self.__mnemonic: Optional[Mnemonic] = None
 
     def checksum(self) -> int:
@@ -146,7 +146,7 @@ class Entropy(bytes, DictionaryAccess):
         return deepcopy(self.__mnemonic)
 
 
-class Mnemonic(str, DictionaryAccess):
+class Mnemonic(str, _DictionaryAccess):
     """Class for mnemonic representation.
     """
 
@@ -157,7 +157,7 @@ class Mnemonic(str, DictionaryAccess):
         if not isinstance(mnemonic, str):
             raise TypeError('argument `mnemonic` should be str, not {}'.format(type(mnemonic).__name__))
         super().__init__()
-        DictionaryAccess.__init__(self)
+        _DictionaryAccess.__init__(self)
 
         words = mnemonic.split()
         n_words = len(words)
@@ -191,7 +191,7 @@ class Mnemonic(str, DictionaryAccess):
 
     @staticmethod
     def checksum(mnemonic: str, dictionary_file_path: str = ENGLISH_DICTIONARY_PATH) -> int:
-        # region TODO copied from DictionaryAccess.__init__
+        # region TODO copied from _DictionaryAccess.__init__
         _dict_list = []
         _dict_dict = {}
         with open(dictionary_file_path, 'r') as f:
