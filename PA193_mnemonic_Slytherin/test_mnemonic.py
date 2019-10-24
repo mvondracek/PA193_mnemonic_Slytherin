@@ -9,7 +9,6 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 
 2019
 """
-import unittest
 from binascii import unhexlify
 from unittest import TestCase
 
@@ -394,7 +393,3 @@ class TestEntropy(TestCase):
         e_from_m_from_e = m_from_e.to_entropy()  # returns new Entropy
         self.assertIsNot(e_from_m_from_e, e)
         self.assertEqual(e_from_m_from_e, e)
-
-
-if __name__ == '__main__':
-    unittest.main()
