@@ -15,7 +15,6 @@ from unittest import TestCase
 from PA193_mnemonic_Slytherin.mnemonic import Entropy, Mnemonic, Seed
 from PA193_mnemonic_Slytherin.mnemonic import generate, recover, verify
 
-
 # Test vectors by Trezor. Organized as entropy, mnemonic, seed, xprv
 # https://github.com/trezor/python-mnemonic/blob/master/vectors.json
 TREZOR_PASSWORD = 'TREZOR'
@@ -243,6 +242,8 @@ class TestPublicFunctions(TestCase):
 # TODO add more tests (different from Trezor vector)
 class TestMnemonic(TestCase):
     """Tests Mnemonic"""
+    VALID_MNEMONIC_PHRASE = TREZOR_TEST_VECTORS['english'][0][1]
+
     def test___init__(self):
         whitespaces = ['\t', '\n', '\x0b', '\x0c', '\r', ' ', '\x85', '\xa0', '\u1680', '\u2000', '\u2001', '\u2002',
                        '\u2003', '\u2004', '\u2005', '\u2006', '\u2007', '\u2008', '\u2009', '\u200a', '\u2028',
@@ -253,38 +254,41 @@ class TestMnemonic(TestCase):
                 Mnemonic(whitespace + test_vector[1] + whitespace)
 
     def test___init___invalid_argument(self):
-        for test_input in [None, 1, b'\xff', b'text as bytes not str', ['text in a list']]:
+        for test_input in [
+            None,
+            1,
+            b'\xff',
+            b'text as bytes not str',
+            ['text in a list'],
+        ]:
             with self.subTest(test_input=test_input):
                 with self.assertRaisesRegex(TypeError, r'argument `mnemonic` should be str'):
                     # noinspection PyTypeChecker
                     Mnemonic(test_input)  # type: ignore
 
-        test_inputs = [
+        for test_input in [
             '',
             'abandon ' * 11,
-            TREZOR_TEST_VECTORS['english'][0][1] + ' abandon',
-            ]
-        for test_input in test_inputs:
+            self.VALID_MNEMONIC_PHRASE + ' abandon',
+        ]:
             with self.subTest(test_input=test_input):
                 with self.assertRaisesRegex(ValueError, r'argument `mnemonic` has invalid number of words'):
                     Mnemonic(test_input)
 
-        test_inputs = [
+        for test_input in [
             'test_ string_ not_ in_ dictionary_ test_ string_ not_ in_ dictionary_ test_ test_',
             'あいいここあくしんん ' * 12,
             'not_in_dictionary ' * 12,
-            ]
-        for test_input in test_inputs:
+        ]:
             with self.subTest(test_input=test_input):
                 with self.assertRaisesRegex(ValueError, r'argument `mnemonic` contains word (.+) which is not in '
                                                         r'current dictionary'):
                     Mnemonic(test_input)
 
-        test_inputs = [
+        for test_input in [
             'abandon ' * 12,
-            ' '.join(TREZOR_TEST_VECTORS['english'][1][1].split()[:-1] + [' abandon']),  # last word replaced
-            ]
-        for test_input in test_inputs:
+            ' '.join(self.VALID_MNEMONIC_PHRASE.split()[:-1] + [' abandon']),  # last word replaced
+        ]:
             with self.subTest(test_input=test_input):
                 with self.assertRaisesRegex(ValueError,
                                             r'argument `mnemonic` includes checksum \d+ different from computed \d+'):
@@ -346,6 +350,7 @@ class TestMnemonic(TestCase):
 
 class TestSeed(TestCase):
     """Tests Seed"""
+
     def setUp(self) -> None:
         self.seed_bytes_a1 = int.to_bytes(1, 64, 'little')
         self.seed_bytes_a2 = int.to_bytes(1, 64, 'little')
