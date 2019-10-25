@@ -176,12 +176,34 @@ class TestPublicFunctions(TestCase):
     test each function separately.
     TODO add testing for incorrect inputs
     """
+    VALID_MNEMONIC = Mnemonic(TREZOR_TEST_VECTORS['english'][0][1])
+    VALID_ENTROPY = Entropy(unhexlify(TREZOR_TEST_VECTORS['english'][0][0]))
+    VALID_SEED = Seed(unhexlify(TREZOR_TEST_VECTORS['english'][0][2]))
+    VALID_PASSWORD = TREZOR_PASSWORD
+    TESTING_TYPES = [
+        None,
+        123,
+        3.14,
+        [None],
+        (None, None),
+        {'a': 1, 'b': None},
+    ]
 
     def test_generate(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             mnemonic, seed = generate(Entropy(unhexlify(test_vector[0])), TREZOR_PASSWORD)
             self.assertEqual(Mnemonic(test_vector[1]), mnemonic)
             self.assertEqual(Seed(unhexlify(test_vector[2])), seed)
+
+    def test_generate_invalid_arguments(self):
+        # noinspection PyTypeChecker
+        for test_entropy in self.TESTING_TYPES + ['some string']:
+            with self.assertRaisesRegex(TypeError, 'argument `entropy` should be of type Entropy'):
+                generate(test_entropy, self.VALID_PASSWORD)
+        # noinspection PyTypeChecker
+        for test_password in self.TESTING_TYPES + [b'\xff']:
+            with self.assertRaisesRegex(TypeError, 'argument `seed_password` should be of type str'):
+                generate(self.VALID_ENTROPY, test_password)
 
     def test_recover(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:

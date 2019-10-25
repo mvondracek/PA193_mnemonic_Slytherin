@@ -264,9 +264,9 @@ def generate(entropy: Entropy, seed_password: str = '') -> Tuple[Mnemonic, Seed]
     :return: Two item tuple where first is mnemonic phrase and second is seed.
     """
     if not isinstance(entropy, Entropy):
-        raise TypeError('Expected Entropy, got {}'.format(type(entropy)))
+        raise TypeError('argument `entropy` should be of type Entropy, got {}'.format(type(entropy)))
     if not isinstance(seed_password, str):
-        raise TypeError('Expected str, got {}'.format(type(seed_password)))
+        raise TypeError('argument `seed_password` should be of type str, got {}'.format(type(seed_password)))
 
     mnemonic = entropy.to_mnemonic()
     seed = mnemonic.to_seed(seed_password)
