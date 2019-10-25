@@ -39,6 +39,10 @@ class _DictionaryAccess:
         :rtype: Tuple[List[str], Dict[str, int]]
         :return: List and dictionary of words
         """
+        if not isinstance(file_path, str):
+            raise TypeError('argument `file_path` should be str, not {}'.format(
+                type(file_path).__name__))
+
         self._dict_list = []
         self._dict_dict = {}
         with open(file_path, 'r') as f:
@@ -209,11 +213,11 @@ class Mnemonic(str, _DictionaryAccess):
             for i in range(2048):
                 line = next(f).strip()
                 if len(line) > 16 or len(line.split()) != 1:
-                    raise ValueError('Cannot instantiate dictionary')
+                    raise ValueError('Cannot instantiate dictionary')  # TODO more descriptive message 1)
                 _dict_list.append(line)
                 _dict_dict[line] = i
             if f.read():
-                raise ValueError('Cannot instantiate dictionary')
+                raise ValueError('Cannot instantiate dictionary')  # TODO more descriptive message 2)
         # endregion
 
         # region TODO copied from Mnemonic.__init__

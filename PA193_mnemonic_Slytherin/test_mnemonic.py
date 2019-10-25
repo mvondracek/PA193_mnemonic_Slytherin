@@ -14,7 +14,7 @@ from binascii import unhexlify
 from tempfile import TemporaryDirectory
 from unittest import TestCase
 
-from PA193_mnemonic_Slytherin.mnemonic import Entropy, Mnemonic, Seed
+from PA193_mnemonic_Slytherin.mnemonic import Entropy, Mnemonic, Seed, _DictionaryAccess
 from PA193_mnemonic_Slytherin.mnemonic import generate, recover, verify
 
 # Test vectors by Trezor. Organized as entropy, mnemonic, seed, xprv
@@ -506,3 +506,38 @@ class TestEntropy(TestCase):
         e_from_m_from_e = m_from_e.to_entropy()  # returns new Entropy
         self.assertIsNot(e_from_m_from_e, e)
         self.assertEqual(e_from_m_from_e, e)
+
+
+# noinspection PyPep8Naming
+class Test_DictionaryAccess(TestCase):
+    def test___init___invalid_file_path(self):
+        for test_input in [
+            None,
+            123,
+            b'\xff',
+            [None]
+        ]:
+            with self.assertRaisesRegex(TypeError, 'argument `file_path` should be str'):
+                # noinspection PyTypeChecker
+                _DictionaryAccess(test_input)  # type: ignore
+
+    def test___init___invalid_dictionary_words_on_line(self):
+        with TemporaryDirectory() as tmpdir:
+            with open(os.path.join(tmpdir, '__dictionary_words_on_line__.txt'), 'w') as f:
+                for i in range(
+                        2047):  # 2047 because we will write last line `multiple words on single line` separately
+                    f.write('word_{}\n'.format(i))
+                f.write('multiple words on single line\n')
+            with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
+                _DictionaryAccess(f.name)
+
+    def test___init___invalid_dictionary_long_word(self):
+        with TemporaryDirectory() as tmpdir:
+            for word_lengths in [17, 18, 19]:
+                with open(os.path.join(tmpdir, '__dictionary_long_word__.txt'), 'w') as f:
+                    for i in range(
+                            2047):  # 2047 because we will write last line `multiple words on single line` separately
+                        f.write('word_{}\n'.format(i))
+                    f.write('a' * word_lengths + '\n')
+                with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
+                    _DictionaryAccess(f.name)
