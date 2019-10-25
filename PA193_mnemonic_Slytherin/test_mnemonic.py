@@ -9,7 +9,9 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 
 2019
 """
+import os
 from binascii import unhexlify
+from tempfile import TemporaryDirectory
 from unittest import TestCase
 
 from PA193_mnemonic_Slytherin.mnemonic import Entropy, Mnemonic, Seed
@@ -306,6 +308,66 @@ class TestMnemonic(TestCase):
                 entropy = Entropy(unhexlify(test_vector[0]))
                 checksum = Mnemonic.checksum(test_vector[1])
                 self.assertEqual(entropy.checksum(), checksum)
+
+    def test_checksum_invalid_mnemonic(self):
+        for test_input in [
+            None,
+            123,
+            b'\xff',
+            [None]
+        ]:
+            with self.assertRaisesRegex(TypeError, 'argument `mnemonic` should be str'):
+                # noinspection PyTypeChecker
+                Mnemonic.checksum(test_input)  # type: ignore
+
+        for test_input in [
+            '',
+            'abandon ' * 11,
+            self.VALID_MNEMONIC_PHRASE + ' abandon',
+        ]:
+            with self.assertRaisesRegex(ValueError, 'argument `mnemonic` has invalid number of words'):
+                Mnemonic.checksum(test_input)
+
+        for test_input in [
+            'test_ string_ not_ in_ dictionary_ test_ string_ not_ in_ dictionary_ test_ test_',
+            'あいいここあくしんん ' * 12,
+            'not_in_dictionary ' * 12,
+        ]:
+            with self.subTest(test_input=test_input):
+                with self.assertRaisesRegex(ValueError,
+                                            r'argument `mnemonic` contains word (.+) which is not in '
+                                            r'current dictionary'):
+                    Mnemonic.checksum(test_input)
+
+    def test_checksum_invalid_dictionary_file_path(self):
+        for test_input in [
+            None,
+            123,
+            b'\xff',
+            [None]
+        ]:
+            with self.assertRaisesRegex(TypeError, 'argument `dictionary_file_path` should be str'):
+                # noinspection PyTypeChecker
+                Mnemonic.checksum(self.VALID_MNEMONIC_PHRASE, test_input)  # type: ignore
+
+    def test_checksum_invalid_dictionary_words_on_line(self):
+        with TemporaryDirectory() as tmpdir:
+            with open(os.path.join(tmpdir, '__dictionary_words_on_line__.txt'), 'w') as f:
+                for i in range(2047):  # 2047 because we will write last line `multiple words on single line` separately
+                    f.write('word_{}\n'.format(i))
+                f.write('multiple words on single line\n')
+            with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
+                Mnemonic.checksum(self.VALID_MNEMONIC_PHRASE, dictionary_file_path=f.name)
+
+    def test_checksum_invalid_dictionary_long_word(self):
+        with TemporaryDirectory() as tmpdir:
+            for word_lengths in [17, 18, 19]:
+                with open(os.path.join(tmpdir, '__dictionary_long_word__.txt'), 'w') as f:
+                    for i in range(2047):  # 2047 because we will write last line `multiple words on single line` separately
+                        f.write('word_{}\n'.format(i))
+                    f.write('a' * word_lengths + '\n')
+                with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
+                    Mnemonic.checksum(self.VALID_MNEMONIC_PHRASE, dictionary_file_path=f.name)
 
     def test_toSeed(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:

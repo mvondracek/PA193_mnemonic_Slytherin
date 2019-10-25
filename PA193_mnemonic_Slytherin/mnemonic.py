@@ -191,6 +191,17 @@ class Mnemonic(str, _DictionaryAccess):
 
     @staticmethod
     def checksum(mnemonic: str, dictionary_file_path: str = ENGLISH_DICTIONARY_PATH) -> int:
+        """
+        :raises ValueError: Cannot instantiate dictionary  # TODO more descriptive message 1)
+        :raises ValueError: Cannot instantiate dictionary  # TODO more descriptive message 2)
+        :raises TypeError: `mnemonic` is not instance of `str`.
+        :raises ValueError: `mnemonic` has invalid number of words, expected one of (12, 15, 18, 21, 24).
+        :raises ValueError: `mnemonic` contains word which is not in current dictionary.
+        """
+        if not isinstance(dictionary_file_path, str):
+            raise TypeError('argument `dictionary_file_path` should be str, not {}'.format(
+                type(dictionary_file_path).__name__))
+
         # region TODO copied from _DictionaryAccess.__init__
         _dict_list = []
         _dict_dict = {}
