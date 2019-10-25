@@ -350,6 +350,15 @@ class TestMnemonic(TestCase):
                 # noinspection PyTypeChecker
                 Mnemonic.checksum(self.VALID_MNEMONIC_PHRASE, test_input)  # type: ignore
 
+    def test_checksum_invalid_dictionary_lines(self):
+        with TemporaryDirectory() as tmpdir:
+            for lines in [0, 1, 2, 2046, 2047, 2049, 2050, 2051]:
+                with open(os.path.join(tmpdir, '__dictionary_lines__.txt'), 'w') as f:
+                    for i in range(lines):
+                        f.write('word\n')
+                with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
+                    Mnemonic.checksum(self.VALID_MNEMONIC_PHRASE, dictionary_file_path=f.name)
+
     def test_checksum_invalid_dictionary_words_on_line(self):
         with TemporaryDirectory() as tmpdir:
             with open(os.path.join(tmpdir, '__dictionary_words_on_line__.txt'), 'w') as f:
@@ -520,6 +529,15 @@ class Test_DictionaryAccess(TestCase):
             with self.assertRaisesRegex(TypeError, 'argument `file_path` should be str'):
                 # noinspection PyTypeChecker
                 _DictionaryAccess(test_input)  # type: ignore
+
+    def test___init___invalid_dictionary_lines(self):
+        with TemporaryDirectory() as tmpdir:
+            for lines in [0, 1, 2, 2046, 2047, 2049, 2050, 2051]:
+                with open(os.path.join(tmpdir, '__dictionary_lines__.txt'), 'w') as f:
+                    for i in range(lines):
+                        f.write('word\n')
+                with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
+                    _DictionaryAccess(f.name)
 
     def test___init___invalid_dictionary_words_on_line(self):
         with TemporaryDirectory() as tmpdir:
