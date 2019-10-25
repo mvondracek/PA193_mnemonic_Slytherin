@@ -282,9 +282,9 @@ def recover(mnemonic: Mnemonic, seed_password: str = '') -> Tuple[Entropy, Seed]
     :return: Two item tuple where first is initial entropy and second is seed.
     """
     if not isinstance(mnemonic, Mnemonic):
-        raise TypeError('Expected Mnemonic, got {}'.format(type(mnemonic)))
+        raise TypeError('argument `mnemonic` should be of type Mnemonic, got {}'.format(type(mnemonic)))
     if not isinstance(seed_password, str):
-        raise TypeError('Expected str, got {}'.format(type(seed_password)))
+        raise TypeError('argument `seed_password` should be of type str, got {}'.format(type(seed_password)))
 
     entropy = mnemonic.to_entropy()
     seed = mnemonic.to_seed(seed_password)

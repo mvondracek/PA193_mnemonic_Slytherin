@@ -211,6 +211,16 @@ class TestPublicFunctions(TestCase):
             self.assertEqual(Entropy(unhexlify(test_vector[0])), entropy)
             self.assertEqual(Seed(unhexlify(test_vector[2])), seed)
 
+    def test_recover_invalid_arguments(self):
+        # noinspection PyTypeChecker
+        for test_mnemonic in self.TESTING_TYPES + ['some string', b'\xff']:
+            with self.assertRaisesRegex(TypeError, 'argument `mnemonic` should be of type Mnemonic'):
+                recover(test_mnemonic, self.VALID_PASSWORD)
+        # noinspection PyTypeChecker
+        for test_password in self.TESTING_TYPES + [b'\xff']:
+            with self.assertRaisesRegex(TypeError, 'argument `seed_password` should be of type str'):
+                recover(self.VALID_MNEMONIC, test_password)
+
     def test_verify(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             self.assertTrue(verify(Mnemonic(test_vector[1]), Seed(unhexlify(test_vector[2])), TREZOR_PASSWORD))
