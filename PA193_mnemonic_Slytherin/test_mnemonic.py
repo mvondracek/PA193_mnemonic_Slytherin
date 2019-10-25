@@ -225,6 +225,20 @@ class TestPublicFunctions(TestCase):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             self.assertTrue(verify(Mnemonic(test_vector[1]), Seed(unhexlify(test_vector[2])), TREZOR_PASSWORD))
 
+    def test_verify_invalid_arguments(self):
+        # noinspection PyTypeChecker
+        for test_mnemonic in self.TESTING_TYPES + ['some string', b'\xff']:
+            with self.assertRaisesRegex(TypeError, 'argument `mnemonic` should be of type Mnemonic'):
+                verify(test_mnemonic, self.VALID_SEED, self.VALID_PASSWORD)
+        # noinspection PyTypeChecker
+        for test_seed in self.TESTING_TYPES + ['some string']:
+            with self.assertRaisesRegex(TypeError, 'argument `expected_seed` should be of type Seed'):
+                verify(self.VALID_MNEMONIC, test_seed, self.VALID_PASSWORD)
+        # noinspection PyTypeChecker
+        for test_password in self.TESTING_TYPES + [b'\xff']:
+            with self.assertRaisesRegex(TypeError, 'argument `seed_password` should be of type str'):
+                verify(self.VALID_MNEMONIC, self.VALID_SEED, test_password)
+
 
 # TODO add more tests (different from Trezor vector)
 class TestMnemonic(TestCase):

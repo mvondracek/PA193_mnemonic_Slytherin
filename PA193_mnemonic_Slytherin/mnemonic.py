@@ -300,11 +300,11 @@ def verify(mnemonic: Mnemonic, expected_seed: Seed, seed_password: str = '') -> 
     :return: True if provided phrase generates expected seed, False otherwise.
     """
     if not isinstance(expected_seed, Seed):
-        raise TypeError('Expected Seed, got {}'.format(type(expected_seed)))
+        raise TypeError('argument `expected_seed` should be of type Seed, got {}'.format(type(expected_seed)))
     if not isinstance(mnemonic, Mnemonic):
-        raise TypeError('Expected Mnemonic, got {}'.format(type(mnemonic)))
+        raise TypeError('argument `mnemonic` should be of type Mnemonic, got {}'.format(type(mnemonic)))
     if not isinstance(seed_password, str):
-        raise TypeError('Expected str, got {}'.format(type(seed_password)))
+        raise TypeError('argument `seed_password` should be of type str, got {}'.format(type(seed_password)))
 
     generated_seed = mnemonic.to_seed(seed_password)
     return expected_seed == generated_seed
