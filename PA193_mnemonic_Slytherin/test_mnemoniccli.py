@@ -12,12 +12,14 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 import os
 import subprocess
 import unittest
+from binascii import hexlify, unhexlify
 from io import StringIO
 from contextlib import redirect_stdout, redirect_stderr
 from tempfile import TemporaryDirectory
 from typing import Optional, List
 
-from PA193_mnemonic_Slytherin.mnemoniccli import ExitCode, cli_entry_point
+from PA193_mnemonic_Slytherin.mnemoniccli import ExitCode, cli_entry_point, Config
+from PA193_mnemonic_Slytherin.test_mnemonic import TREZOR_TEST_VECTORS, TREZOR_PASSWORD
 
 
 class TestMain(unittest.TestCase):
@@ -184,3 +186,79 @@ class TestMain(unittest.TestCase):
                                          '-m', non_existing_filepath,
                                          '-s', non_existing_filepath], ExitCode.EX_DATAERR,
                                         stdout_check='', stderr_check=None)
+
+    def test_generate(self):
+        with TemporaryDirectory() as tmpdir:
+            for test_vector in TREZOR_TEST_VECTORS['english']:
+                for io_format in Config.Format:
+                    write_mode = 'wb' if io_format is Config.Format.BINARY else 'w'
+                    read_mode = 'rb' if io_format is Config.Format.BINARY else 'r'
+                    with self.subTest(entropy=test_vector[0]):
+                        seed_path = os.path.join(tmpdir, '__seed__')
+                        mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
+                        entropy_path = os.path.join(tmpdir, '__entropy__')
+                        with open(entropy_path, write_mode) as entropy_file:
+                            entropy_file.write(
+                                unhexlify(test_vector[0]) if io_format is Config.Format.BINARY else test_vector[0])
+                        self.assert_program([self.SCRIPT, '-g', '--format', io_format.value, '-p', TREZOR_PASSWORD,
+                                             '-e', entropy_path,
+                                             '-m', mnemonic_path,
+                                             '-s', seed_path], ExitCode.EX_OK,
+                                            stdout_check='[DONE] Generate, mnemonic in {}, seed in {}.\n'.format(
+                                                mnemonic_path, seed_path),
+                                            stderr_check='')
+                        with open(seed_path, read_mode) as seed_file:
+                            content = seed_file.read()
+                            if io_format is Config.Format.BINARY:
+                                seed = str(hexlify(content), 'ascii')
+                            self.assertEqual(test_vector[2], seed)
+                        with open(mnemonic_path, 'r') as mnemonic_file:
+                            self.assertEqual(test_vector[1], mnemonic_file.read())
+
+    def test_recover(self):
+        with TemporaryDirectory() as tmpdir:
+            for test_vector in TREZOR_TEST_VECTORS['english']:
+                for io_format in Config.Format:
+                    read_mode = 'rb' if io_format is Config.Format.BINARY else 'r'
+                    with self.subTest(mnemonic=test_vector[1]):
+                        seed_path = os.path.join(tmpdir, '__seed__')
+                        mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
+                        entropy_path = os.path.join(tmpdir, '__entropy__')
+                        with open(mnemonic_path, 'w') as mnemonic_file:
+                            mnemonic_file.write(test_vector[1])
+                        self.assert_program([self.SCRIPT, '-r', '--format', io_format.value, '-p', TREZOR_PASSWORD,
+                                             '-e', entropy_path,
+                                             '-m', mnemonic_path,
+                                             '-s', seed_path], ExitCode.EX_OK,
+                                            stdout_check='[DONE] Recover, entropy in {}, seed in {}.\n'.format(
+                                                entropy_path, seed_path),
+                                            stderr_check='')
+                        with open(seed_path, read_mode) as seed_file:
+                            content = seed_file.read()
+                            if io_format is Config.Format.BINARY:
+                                seed = str(hexlify(content), 'ascii')
+                            self.assertEqual(test_vector[2], seed)
+                        with open(entropy_path, read_mode) as entropy_file:
+                            content = entropy_file.read()
+                            if io_format is Config.Format.BINARY:
+                                entropy = str(hexlify(content), 'ascii')
+                            self.assertEqual(test_vector[0], entropy)
+
+    def test_verify(self):
+        with TemporaryDirectory() as tmpdir:
+            for test_vector in TREZOR_TEST_VECTORS['english']:
+                for io_format in Config.Format:
+                    write_mode = 'wb' if io_format is Config.Format.BINARY else 'w'
+                    with self.subTest(mnemonic=test_vector[1], seed=test_vector[2]):
+                        seed_path = os.path.join(tmpdir, '__seed__')
+                        mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
+                        with open(mnemonic_path, 'w') as mnemonic_file:
+                            mnemonic_file.write(test_vector[1])
+                        with open(seed_path, write_mode) as seed_file:
+                            seed_file.write(
+                                unhexlify(test_vector[2]) if io_format is Config.Format.BINARY else test_vector[2])
+                        self.assert_program([self.SCRIPT, '-v', '--format', io_format.value, '-p', TREZOR_PASSWORD,
+                                             '-m', mnemonic_path,
+                                             '-s', seed_path], ExitCode.EX_OK,
+                                            stdout_check='Seeds match.\n',
+                                            stderr_check='')
