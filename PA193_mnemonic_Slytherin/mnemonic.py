@@ -96,19 +96,15 @@ class Seed(bytes):
         :rtype: bool
         :return: True if seeds are the same, False otherwise.
         """
-        # > hmac.compare_digest` uses an approach designed to prevent timing
-        # > analysis by avoiding content-based short circuiting behaviour, making
-        #  > it appropriate for cryptography
-        # > https://docs.python.org/3.7/library/hmac.html#hmac.compare_digest
-        #
-        # > Note: If a and b are of different lengths, or if an error occurs,
-        # > a timing attack could theoretically reveal information about the types
-        #  > and lengths of a and b—but not their values.
-        #
-        # Type and length of seeds is known to the attacker, but not the value of expected seed.
+        result = 0
         if not isinstance(other, Seed):
-            return False
-        return hmac.compare_digest(self, other)
+            result = 1
+            s = self
+        else:
+            s = other
+        for b1, b2 in zip(self, s):
+            result |= b1 ^ b2
+        return result == 0
 
     def __ne__(self, other: object) -> bool:
         """Compare seeds in constant time to prevent timing attacks.
