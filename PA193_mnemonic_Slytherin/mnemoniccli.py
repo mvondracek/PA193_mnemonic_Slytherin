@@ -177,16 +177,20 @@ class Config(object):
         # NOTE: Call to parse_args with namespace=self does not set logging_level with default value, if argument is not
         # in provided args.
         parsed_args = parser.parse_args(args=args)
+        action_name = 'verify' if parsed_args.verify else 'generate' if parsed_args.generate else 'recover'
         # basic input file path check
-        if parsed_args.generate and not parsed_args.entropy:
-            parser.error('argument entropy is required with action `generate`'.format(parsed_args.entropy))
-        elif parsed_args.recover and not parsed_args.mnemonic:
-            parser.error('argument mnemonic is required with action `recover`'.format(parsed_args.entropy))
-        elif parsed_args.verify:
+        if parsed_args.verify:
             if not parsed_args.mnemonic:
-                parser.error('argument mnemonic is required with action `verify`'.format(parsed_args.entropy))
+                parser.error('argument mnemonic is required with action `{}`'.format(parsed_args.entropy, action_name))
             if not parsed_args.seed:
-                parser.error('argument seed is required with action `verify`'.format(parsed_args.entropy))
+                parser.error('argument seed is required with action `{}`'.format(parsed_args.entropy, action_name))
+        else:  # generate or recover
+            if not parsed_args.entropy:
+                parser.error('argument entropy is required with action `{}`'.format(parsed_args.entropy, action_name))
+            if not parsed_args.mnemonic:
+                parser.error('argument mnemonic is required with action `{}`'.format(parsed_args.entropy, action_name))
+            if not parsed_args.seed:
+                parser.error('argument seed is required with action `{}`'.format(parsed_args.entropy, action_name))
 
         config = cls(
             # name to value conversion as noted in `self.init_parser`

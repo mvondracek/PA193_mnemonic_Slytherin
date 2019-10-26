@@ -108,6 +108,26 @@ class TestMain(unittest.TestCase):
             self.assert_program_error([self.SCRIPT, '-v', '-m', non_existing_filepath], ExitCode.ARGUMENTS)
             self.assert_program_error([self.SCRIPT, '-v', '-s', non_existing_filepath], ExitCode.ARGUMENTS)
 
+            self.assert_program_error([self.SCRIPT, '-g', '-e', non_existing_filepath], ExitCode.ARGUMENTS)
+            self.assert_program_error([self.SCRIPT, '-g', '-m', non_existing_filepath], ExitCode.ARGUMENTS)
+            self.assert_program_error([self.SCRIPT, '-g', '-s', non_existing_filepath], ExitCode.ARGUMENTS)
+            self.assert_program_error([self.SCRIPT, '-g', '-e', non_existing_filepath, '-m', non_existing_filepath],
+                                      ExitCode.ARGUMENTS)
+            self.assert_program_error([self.SCRIPT, '-g', '-m', non_existing_filepath, '-s', non_existing_filepath],
+                                      ExitCode.ARGUMENTS)
+            self.assert_program_error([self.SCRIPT, '-g', '-e', non_existing_filepath, '-s', non_existing_filepath],
+                                      ExitCode.ARGUMENTS)
+
+            self.assert_program_error([self.SCRIPT, '-r', '-e', non_existing_filepath], ExitCode.ARGUMENTS)
+            self.assert_program_error([self.SCRIPT, '-r', '-m', non_existing_filepath], ExitCode.ARGUMENTS)
+            self.assert_program_error([self.SCRIPT, '-r', '-s', non_existing_filepath], ExitCode.ARGUMENTS)
+            self.assert_program_error([self.SCRIPT, '-r', '-e', non_existing_filepath, '-m', non_existing_filepath],
+                                      ExitCode.ARGUMENTS)
+            self.assert_program_error([self.SCRIPT, '-r', '-m', non_existing_filepath, '-s', non_existing_filepath],
+                                      ExitCode.ARGUMENTS)
+            self.assert_program_error([self.SCRIPT, '-r', '-e', non_existing_filepath, '-s', non_existing_filepath],
+                                      ExitCode.ARGUMENTS)
+
     def test_arguments_ok_terminated(self):
         """correct argument resulting in termination"""
         self.assert_program_success([self.SCRIPT, '-h'])
