@@ -170,6 +170,12 @@ TREZOR_TEST_VECTORS = {
     ]
 }
 
+VALID_MNEMONIC_PHRASE_TREZOR = TREZOR_TEST_VECTORS['english'][0][1]
+VALID_MNEMONIC_TREZOR = Mnemonic(TREZOR_TEST_VECTORS['english'][0][1])
+VALID_ENTROPY_TREZOR = Entropy(unhexlify(TREZOR_TEST_VECTORS['english'][0][0]))
+VALID_SEED_TREZOR = Seed(unhexlify(TREZOR_TEST_VECTORS['english'][0][2]))
+VALID_PASSWORD_TREZOR = TREZOR_PASSWORD
+
 
 class TestPublicFunctions(TestCase):
     """Tests for public functions of mnemonic module.
@@ -177,10 +183,6 @@ class TestPublicFunctions(TestCase):
     test each function separately.
     TODO add testing for incorrect inputs
     """
-    VALID_MNEMONIC = Mnemonic(TREZOR_TEST_VECTORS['english'][0][1])
-    VALID_ENTROPY = Entropy(unhexlify(TREZOR_TEST_VECTORS['english'][0][0]))
-    VALID_SEED = Seed(unhexlify(TREZOR_TEST_VECTORS['english'][0][2]))
-    VALID_PASSWORD = TREZOR_PASSWORD
     TESTING_TYPES = [
         None,
         123,
@@ -200,16 +202,16 @@ class TestPublicFunctions(TestCase):
         # noinspection PyTypeChecker
         for test_entropy in self.TESTING_TYPES + ['some string']:
             with self.assertRaisesRegex(TypeError, 'argument `entropy` should be of type Entropy'):
-                generate(test_entropy, self.VALID_PASSWORD)
+                generate(test_entropy, VALID_PASSWORD_TREZOR)
         # noinspection PyTypeChecker
         for test_password in self.TESTING_TYPES + [b'\xff']:
             with self.assertRaisesRegex(TypeError, 'argument `seed_password` should be of type str'):
-                generate(self.VALID_ENTROPY, test_password)
+                generate(VALID_ENTROPY_TREZOR, test_password)
 
     def test_generate_invalid_password_too_long(self):
         password = 'a' * 1024 * 1024  # 1 MB
         with self.assertRaises(ValueError):
-            generate(self.VALID_ENTROPY, password)
+            generate(VALID_ENTROPY_TREZOR, password)
 
     def test_recover(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
@@ -221,16 +223,16 @@ class TestPublicFunctions(TestCase):
         # noinspection PyTypeChecker
         for test_mnemonic in self.TESTING_TYPES + ['some string', b'\xff']:
             with self.assertRaisesRegex(TypeError, 'argument `mnemonic` should be of type Mnemonic'):
-                recover(test_mnemonic, self.VALID_PASSWORD)
+                recover(test_mnemonic, VALID_PASSWORD_TREZOR)
         # noinspection PyTypeChecker
         for test_password in self.TESTING_TYPES + [b'\xff']:
             with self.assertRaisesRegex(TypeError, 'argument `seed_password` should be of type str'):
-                recover(self.VALID_MNEMONIC, test_password)
+                recover(VALID_MNEMONIC_TREZOR, test_password)
 
     def test_recover_invalid_password_too_long(self):
         password = 'a' * 1024 * 1024  # 1 MB
         with self.assertRaises(ValueError):
-            recover(self.VALID_MNEMONIC, password)
+            recover(VALID_MNEMONIC_TREZOR, password)
 
     def test_verify(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
@@ -240,26 +242,25 @@ class TestPublicFunctions(TestCase):
         # noinspection PyTypeChecker
         for test_mnemonic in self.TESTING_TYPES + ['some string', b'\xff']:
             with self.assertRaisesRegex(TypeError, 'argument `mnemonic` should be of type Mnemonic'):
-                verify(test_mnemonic, self.VALID_SEED, self.VALID_PASSWORD)
+                verify(test_mnemonic, VALID_SEED_TREZOR, VALID_PASSWORD_TREZOR)
         # noinspection PyTypeChecker
         for test_seed in self.TESTING_TYPES + ['some string']:
             with self.assertRaisesRegex(TypeError, 'argument `expected_seed` should be of type Seed'):
-                verify(self.VALID_MNEMONIC, test_seed, self.VALID_PASSWORD)
+                verify(VALID_MNEMONIC_TREZOR, test_seed, VALID_PASSWORD_TREZOR)
         # noinspection PyTypeChecker
         for test_password in self.TESTING_TYPES + [b'\xff']:
             with self.assertRaisesRegex(TypeError, 'argument `seed_password` should be of type str'):
-                verify(self.VALID_MNEMONIC, self.VALID_SEED, test_password)
+                verify(VALID_MNEMONIC_TREZOR, VALID_SEED_TREZOR, test_password)
 
     def test_verify_invalid_password_too_long(self):
         password = 'a' * 1024 * 1024  # 1 MB
         with self.assertRaises(ValueError):
-            verify(self.VALID_MNEMONIC, self.VALID_SEED, password)
+            verify(VALID_MNEMONIC_TREZOR, VALID_SEED_TREZOR, password)
 
 
 # TODO add more tests (different from Trezor vector)
 class TestMnemonic(TestCase):
     """Tests Mnemonic"""
-    VALID_MNEMONIC_PHRASE = TREZOR_TEST_VECTORS['english'][0][1]
 
     def test___init__(self):
         whitespaces = ['\t', '\n', '\x0b', '\x0c', '\r', ' ', '\x85', '\xa0', '\u1680', '\u2000', '\u2001', '\u2002',
@@ -286,7 +287,7 @@ class TestMnemonic(TestCase):
         for test_input in [
             '',
             'abandon ' * 11,
-            self.VALID_MNEMONIC_PHRASE + ' abandon',
+            VALID_MNEMONIC_PHRASE_TREZOR + ' abandon',
         ]:
             with self.subTest(test_input=test_input):
                 with self.assertRaisesRegex(ValueError, r'argument `mnemonic` has invalid number of words'):
@@ -304,7 +305,7 @@ class TestMnemonic(TestCase):
 
         for test_input in [
             'abandon ' * 12,
-            ' '.join(self.VALID_MNEMONIC_PHRASE.split()[:-1] + [' abandon']),  # last word replaced
+            ' '.join(VALID_MNEMONIC_PHRASE_TREZOR.split()[:-1] + [' abandon']),  # last word replaced
         ]:
             with self.subTest(test_input=test_input):
                 with self.assertRaisesRegex(ValueError,
@@ -338,7 +339,7 @@ class TestMnemonic(TestCase):
         for test_input in [
             '',
             'abandon ' * 11,
-            self.VALID_MNEMONIC_PHRASE + ' abandon',
+            VALID_MNEMONIC_PHRASE_TREZOR + ' abandon',
         ]:
             with self.assertRaisesRegex(ValueError, 'argument `mnemonic` has invalid number of words'):
                 Mnemonic.checksum(test_input)
@@ -363,7 +364,7 @@ class TestMnemonic(TestCase):
         ]:
             with self.assertRaisesRegex(TypeError, 'argument `dictionary_file_path` should be str'):
                 # noinspection PyTypeChecker
-                Mnemonic.checksum(self.VALID_MNEMONIC_PHRASE, test_input)  # type: ignore
+                Mnemonic.checksum(VALID_MNEMONIC_PHRASE_TREZOR, test_input)  # type: ignore
 
     def test_checksum_invalid_dictionary_words_on_line(self):
         with TemporaryDirectory() as tmpdir:
@@ -372,7 +373,7 @@ class TestMnemonic(TestCase):
                     f.write('word_{}\n'.format(i))
                 f.write('multiple words on single line\n')
             with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
-                Mnemonic.checksum(self.VALID_MNEMONIC_PHRASE, dictionary_file_path=f.name)
+                Mnemonic.checksum(VALID_MNEMONIC_PHRASE_TREZOR, dictionary_file_path=f.name)
 
     def test_checksum_invalid_dictionary_long_word(self):
         with TemporaryDirectory() as tmpdir:
@@ -382,7 +383,7 @@ class TestMnemonic(TestCase):
                         f.write('word_{}\n'.format(i))
                     f.write('a' * word_lengths + '\n')
                 with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
-                    Mnemonic.checksum(self.VALID_MNEMONIC_PHRASE, dictionary_file_path=f.name)
+                    Mnemonic.checksum(VALID_MNEMONIC_PHRASE_TREZOR, dictionary_file_path=f.name)
 
     def test_to_seed(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
@@ -394,18 +395,14 @@ class TestMnemonic(TestCase):
     def test_to_seed_invalid_password(self):
         for password in [None, 1, ['text in array'], b'text as bytes']:
             with self.subTest(password=password):
-                mnemonic = Mnemonic('abandon abandon abandon abandon abandon abandon'
-                                    ' abandon abandon abandon abandon abandon about')
                 with self.assertRaisesRegex(TypeError, r'argument `seed_password` should be str'):
                     # noinspection PyTypeChecker
-                    mnemonic.to_seed(password)  # type: ignore
+                    VALID_MNEMONIC_TREZOR.to_seed(password)  # type: ignore
 
     def test_toSeed_invalid_password_too_long(self):
-        mnemonic = Mnemonic('abandon abandon abandon abandon abandon abandon'
-                            ' abandon abandon abandon abandon abandon about')
         password = 'a' * 1024 * 1024  # 1 MB
         with self.assertRaises(ValueError):
-            mnemonic.to_seed(password)
+            VALID_MNEMONIC_TREZOR.to_seed(password)
 
     def test_to_entropy(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
@@ -415,8 +412,7 @@ class TestMnemonic(TestCase):
                 self.assertEqual(entropy_expected, mnemonic.to_entropy())
 
     def test_to_entropy_deep_copy(self):
-        m = Mnemonic('abandon abandon abandon abandon abandon abandon'
-                     ' abandon abandon abandon abandon abandon about')
+        m = VALID_MNEMONIC_TREZOR
         self.assertIsNot(m.to_entropy(),
                          m.to_entropy())
         self.assertEqual(m.to_entropy(),
@@ -514,7 +510,7 @@ class TestEntropy(TestCase):
             self.assertEqual(mnemonic_expected, entropy.to_mnemonic())
 
     def test_to_mnemonic_deep_copy(self):
-        e = Entropy(unhexlify('00000000000000000000000000000000'))
+        e = VALID_ENTROPY_TREZOR
         self.assertIsNot(e.to_mnemonic(),
                          e.to_mnemonic())
         self.assertEqual(e.to_mnemonic(),
