@@ -408,7 +408,7 @@ class TestMnemonic(TestCase):
                     # noinspection PyTypeChecker
                     VALID_MNEMONIC_TREZOR.to_seed(password)  # type: ignore
 
-    def test_toSeed_invalid_password_too_long(self):
+    def test_to_seed_invalid_password_too_long(self):
         password = 'a' * 1024 * 1024  # 1 MB
         with self.assertRaises(ValueError):
             VALID_MNEMONIC_TREZOR.to_seed(password)
