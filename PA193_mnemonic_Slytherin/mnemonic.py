@@ -68,9 +68,7 @@ class Seed(bytes):
         :rtype: bool
         :return: True if seeds are the same, False otherwise.
         """
-        if not isinstance(other, Seed):
-            return False
-        elif len(self) != len(other):
+        if not isinstance(other, Seed) or len(self) != len(other):
             return False
         else:
             result = 0
