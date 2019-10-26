@@ -18,6 +18,7 @@ from contextlib import redirect_stdout, redirect_stderr
 from tempfile import TemporaryDirectory
 from typing import Optional, List
 
+from PA193_mnemonic_Slytherin.mnemonic import MAX_SEED_PASSWORD_LENGTH
 from PA193_mnemonic_Slytherin.mnemoniccli import ExitCode, cli_entry_point, Config
 from PA193_mnemonic_Slytherin.test_mnemonic import TREZOR_TEST_VECTORS, TREZOR_PASSWORD
 
@@ -106,6 +107,7 @@ class TestMain(unittest.TestCase):
         self.assert_program_error([self.SCRIPT, '-m'], ExitCode.ARGUMENTS)
         self.assert_program_error([self.SCRIPT, '-s'], ExitCode.ARGUMENTS)
         self.assert_program_error([self.SCRIPT, '-p'], ExitCode.ARGUMENTS)
+        self.assert_program_error([self.SCRIPT, '-p', 'a' * (MAX_SEED_PASSWORD_LENGTH + 1)], ExitCode.ARGUMENTS)
         self.assert_program_error([self.SCRIPT, '-v', '-m'], ExitCode.ARGUMENTS)
         self.assert_program_error([self.SCRIPT, '-v', '-s'], ExitCode.ARGUMENTS)
         self.assert_program_error([self.SCRIPT, '-g', '-r', '-v'], ExitCode.ARGUMENTS)
