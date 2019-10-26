@@ -207,11 +207,24 @@ class TestMnemonicPublic(TestCase):
             self.assertEqual(Mnemonic(test_vector[1]), mnemonic)
             self.assertEqual(Seed(unhexlify(test_vector[2])), seed)
 
+    def test_generate_invalid_password_too_long(self):
+        entropy = Entropy(unhexlify('00000000000000000000000000000000'))
+        password = 'a' * 1024 * 1024  # 1 MB
+        with self.assertRaises(ValueError):
+            generate(entropy, password)
+
     def test_recover(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             entropy, seed = recover(Mnemonic(test_vector[1]), TREZOR_PASSWORD)
             self.assertEqual(Entropy(unhexlify(test_vector[0])), entropy)
             self.assertEqual(Seed(unhexlify(test_vector[2])), seed)
+
+    def test_recover_invalid_password_too_long(self):
+        mnemonic = Mnemonic('abandon abandon abandon abandon abandon abandon'
+                            ' abandon abandon abandon abandon abandon about')
+        password = 'a' * 1024 * 1024  # 1 MB
+        with self.assertRaises(ValueError):
+            recover(mnemonic, password)
 
     def test_verify(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
@@ -222,7 +235,7 @@ class TestMnemonicPublic(TestCase):
         """Too long mnemonic phrase which should not be propagated to BPKDF2."""
         seed = unhexlify('c55257c360c07c72029aebc1b53c05ed0362ada38ead3e3e9efa3708e5349553'
                          '1f09a6987599d18264c1e1c92f2cf141630c7a3c4ab7c81b2f001698e7463b04')
-        mnemonic = 'a' * 1024 * 1024 * 1024 * 2  # 2 GB
+        mnemonic = 'a' * 1024 * 1024  # 1 MB
         with self.assertRaises(ValueError):
             verify(Mnemonic(mnemonic), Seed(seed))
 
@@ -231,6 +244,14 @@ class TestMnemonicPublic(TestCase):
 class TestMnemonic(TestCase):
     """Tests for mnemonic entropy conversions.
     """
+
+    def test_toSeed_invalid_password_too_long(self):
+        mnemonic = Mnemonic('abandon abandon abandon abandon abandon abandon'
+                            ' abandon abandon abandon abandon abandon about')
+        password = 'a' * 1024 * 1024  # 1 MB
+        with self.assertRaises(ValueError):
+            mnemonic.toSeed(password)
+
     @unittest.skip("Skipping until we switcheed tests to class representation.")
     def test_mnemonic2entropy(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
@@ -240,6 +261,16 @@ class TestMnemonic(TestCase):
     def test_entropy2mnemonic(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             self.assertEqual(test_vector[1], _entropy2mnemonic(unhexlify(test_vector[0])))
+
+    def test_verify_invalid_password_too_long(self):
+        # TODO separate actions and add setUp
+        seed = Seed(unhexlify('c55257c360c07c72029aebc1b53c05ed0362ada38ead3e3e9efa3708e5349553'
+                              '1f09a6987599d18264c1e1c92f2cf141630c7a3c4ab7c81b2f001698e7463b04'))
+        mnemonic = Mnemonic('abandon abandon abandon abandon abandon abandon'
+                            ' abandon abandon abandon abandon abandon about')
+        password = 'a' * 1024 * 1024  # 1 MB
+        with self.assertRaises(ValueError):
+            verify(mnemonic, seed, password)
 
 
 class TestSeed(TestCase):
