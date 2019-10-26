@@ -139,8 +139,14 @@ class TestMain(unittest.TestCase):
         """input files don't exist"""
         with TemporaryDirectory() as tmpdir:
             non_existing_filepath = os.path.join(tmpdir, '__this_file_does_not_exist__')
-            self.assert_program_error([self.SCRIPT, '-g', '-e', non_existing_filepath], ExitCode.EX_NOINPUT)
-            self.assert_program_error([self.SCRIPT, '-r', '-m', non_existing_filepath], ExitCode.EX_NOINPUT)
+            self.assert_program_error([self.SCRIPT, '-g',
+                                       '-e', non_existing_filepath,
+                                       '-m', non_existing_filepath,
+                                       '-s', non_existing_filepath], ExitCode.EX_NOINPUT)
+            self.assert_program_error([self.SCRIPT, '-r',
+                                       '-e', non_existing_filepath,
+                                       '-m', non_existing_filepath,
+                                       '-s', non_existing_filepath], ExitCode.EX_NOINPUT)
             self.assert_program_error(
                 [self.SCRIPT, '-v', '-m', non_existing_filepath, '-s', non_existing_filepath],
                 ExitCode.EX_NOINPUT)
@@ -158,6 +164,7 @@ class TestMain(unittest.TestCase):
         > https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
         """
         with TemporaryDirectory() as tmpdir:
+            non_existing_filepath = os.path.join(tmpdir, '__this_file_does_not_exist__')
             # binary input file
             # basic byte of entropy for this test
             entropy_byte = b'\x01'
@@ -168,5 +175,8 @@ class TestMain(unittest.TestCase):
                 with self.subTest(entropy_bytes_length=entropy_bytes_length):
                     with open(os.path.join(tmpdir, '__entropy_binary__.dat'), 'wb') as f:
                         f.write(entropy_byte * entropy_bytes_length)
-                    self.assert_program([self.SCRIPT, '-g', '-e', f.name, '--format', 'bin'], ExitCode.EX_DATAERR,
+                    self.assert_program([self.SCRIPT, '-g', '--format', 'bin',
+                                         '-e', f.name,
+                                         '-m', non_existing_filepath,
+                                         '-s', non_existing_filepath], ExitCode.EX_DATAERR,
                                         stdout_check='', stderr_check=None)
