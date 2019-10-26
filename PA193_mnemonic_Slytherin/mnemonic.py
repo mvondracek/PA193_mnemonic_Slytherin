@@ -69,7 +69,7 @@ class Seed(bytes):
         :return: True if seeds are the same, False otherwise.
         """
         result = 0
-        if not isinstance(other, Seed) or len(self) != len(other):
+        if not isinstance(other, Seed):
             result = 1
             s = self
         else:
