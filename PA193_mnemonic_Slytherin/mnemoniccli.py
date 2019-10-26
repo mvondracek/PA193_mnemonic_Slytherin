@@ -112,7 +112,8 @@ class Config(object):
         """
         def valid_password(password):
             if len(password) > MAX_SEED_PASSWORD_LENGTH:
-                raise argparse.ArgumentTypeError("password is longer than {} characters".format(MAX_SEED_PASSWORD_LENGTH))
+                raise argparse.ArgumentTypeError("password is longer than {} characters".format(
+                    MAX_SEED_PASSWORD_LENGTH))
             return password
         parser = argparse.ArgumentParser(
             prog=cls.PROGRAM_NAME,
