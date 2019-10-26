@@ -35,7 +35,7 @@ def xor_byte_strings(b1: bytes, b2: bytes) -> bytes:
     return bytes([x ^ y for x, y in zip(b1, b2)])
 
 
-def pbkdf2_sha512(passw: bytes, salt: bytes, rounds: int) -> bytes:
+def pbkdf2_sha512(password: bytes, salt: bytes, iterations: int) -> bytes:
     """Password Based Key Derivation Function
     https://en.wikipedia.org/wiki/PBKDF2
     Uses HMAC-SHA512, derived key length is 512 bit
@@ -45,11 +45,11 @@ def pbkdf2_sha512(passw: bytes, salt: bytes, rounds: int) -> bytes:
     # The first iteration of PRF uses Password as the PRF key
     # and Salt concatenated with i encoded as a big-endian
     # 32-bit integer as the input.
-    u = hmac.new(passw, salt + (1).to_bytes(4, byteorder='big'), digestmod=sha512).digest()
+    u = hmac.new(password, salt + (1).to_bytes(4, byteorder='big'), digestmod=sha512).digest()
     f = u  # f is the xor (^) of c iterations of chained PRFs
-    for i in range(1, rounds):
-        u = hmac.new(passw, u, digestmod=sha512).digest()
-        f = xor_byte_strings(f, u)
+    for i in range(1, iterations):
+        u = hmac.new(password, u, digestmod=sha512).digest()
+        f = _xor_byte_strings(f, u)
     return f
 
 
