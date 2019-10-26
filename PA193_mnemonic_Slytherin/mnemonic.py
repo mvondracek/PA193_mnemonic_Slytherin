@@ -45,12 +45,12 @@ def pbkdf2_sha512(passw: bytes, salt: bytes, rounds: int) -> bytes:
     # The first iteration of PRF uses Password as the PRF key
     # and Salt concatenated with i encoded as a big-endian
     # 32-bit integer as the input.
-    U = hmac.new(passw, salt + (1).to_bytes(4, byteorder='big'), digestmod=sha512).digest()
-    F = U  # F is the xor (^) of c iterations of chained PRFs
+    u = hmac.new(passw, salt + (1).to_bytes(4, byteorder='big'), digestmod=sha512).digest()
+    f = u  # f is the xor (^) of c iterations of chained PRFs
     for i in range(1, rounds):
-        U = hmac.new(passw, U, digestmod=sha512).digest()
-        F = xor_byte_strings(F, U)
-    return F
+        u = hmac.new(passw, u, digestmod=sha512).digest()
+        f = xor_byte_strings(f, u)
+    return f
 
 
 class dictionaryAccess:
