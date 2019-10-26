@@ -247,7 +247,7 @@ def action_generate(config: Config) -> ExitCode:
     logger.info('Mnemonic written to {}.'.format(config.mnemonic_filepath))
     with open(config.seed_filepath, write_mode) as file:
         if config.format is Config.Format.TEXT_HEXADECIMAL:
-            seed = hexlify(seed)
+            seed = str(hexlify(seed), 'ascii')
         file.write(seed)
     logger.info('Seed written to {}.'.format(config.seed_filepath))
     print('[DONE] Generate, mnemonic in {}, seed in {}.'.format(config.mnemonic_filepath, config.seed_filepath))
@@ -274,12 +274,12 @@ def action_recover(config: Config) -> ExitCode:
     entropy, seed = recover(mnemonic, config.password)
     with open(config.entropy_filepath, write_mode) as file:
         if config.format is Config.Format.TEXT_HEXADECIMAL:
-            entropy = hexlify(entropy)
+            entropy = str(hexlify(entropy), 'ascii')
         file.write(entropy)
     logger.info('Entropy written to {}.'.format(config.entropy_filepath))
     with open(config.seed_filepath, write_mode) as file:
         if config.format is Config.Format.TEXT_HEXADECIMAL:
-            seed = hexlify(seed)
+            seed = str(hexlify(seed), 'ascii')
         file.write(seed)
     logger.info('Seed written to {}.'.format(config.seed_filepath))
     print('[DONE] Recover, entropy in {}, seed in {}.'.format(config.entropy_filepath, config.seed_filepath))
