@@ -369,14 +369,14 @@ class TestMnemonic(TestCase):
                 with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
                     Mnemonic.checksum(self.VALID_MNEMONIC_PHRASE, dictionary_file_path=f.name)
 
-    def test_toSeed(self):
+    def test_to_seed(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             with self.subTest(mnemonic=test_vector[1]):
                 mnemonic = Mnemonic(test_vector[1])
                 seed_expected = Seed(unhexlify(test_vector[2]))
                 self.assertEqual(seed_expected, mnemonic.to_seed(TREZOR_PASSWORD))
 
-    def test_toSeed_invalid_password(self):
+    def test_to_seed_invalid_password(self):
         for password in [None, 1, ['text in array'], b'text as bytes']:
             with self.subTest(password=password):
                 mnemonic = Mnemonic('abandon abandon abandon abandon abandon abandon'
@@ -385,14 +385,14 @@ class TestMnemonic(TestCase):
                     # noinspection PyTypeChecker
                     mnemonic.to_seed(password)  # type: ignore
 
-    def test_toEntropy(self):
+    def test_to_entropy(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             with self.subTest(mnemonic=test_vector[1]):
                 mnemonic = Mnemonic(test_vector[1])
                 entropy_expected = Entropy(unhexlify(test_vector[0]))
                 self.assertEqual(entropy_expected, mnemonic.to_entropy())
 
-    def test_toEntropy_deep_copy(self):
+    def test_to_entropy_deep_copy(self):
         m = Mnemonic('abandon abandon abandon abandon abandon abandon'
                      ' abandon abandon abandon abandon abandon about')
         self.assertIsNot(m.to_entropy(),
@@ -485,13 +485,13 @@ class TestEntropy(TestCase):
                 entropy = Entropy(unhexlify(test_vector[0]))
                 self.assertEqual(checksum_from_mnemonic, entropy.checksum())
 
-    def test_toMnemonic(self):
+    def test_to_mnemonic(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             entropy = Entropy(unhexlify(test_vector[0]))
             mnemonic_expected = Mnemonic(test_vector[1])
             self.assertEqual(mnemonic_expected, entropy.to_mnemonic())
 
-    def test_toMnemonic_deep_copy(self):
+    def test_to_mnemonic_deep_copy(self):
         e = Entropy(unhexlify('00000000000000000000000000000000'))
         self.assertIsNot(e.to_mnemonic(),
                          e.to_mnemonic())
