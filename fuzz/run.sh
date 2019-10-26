@@ -15,8 +15,8 @@ while true
    mnemoniccli -r -m mnemonic_str -s seed -e entropy &>out
    if [[ "$?" != "0" && "$?" != "65" ]] ; then mkdir "$fails" ; cat out >> fails ; cp mnemonic_str "$fails" ; mv out "$fails" ; let "fails++" ; fi
    mnemoniccli -v -m mnemonic_str -s seed_hex &>out
-   if [[ "$?" != "0" && "$?" != "65" ]] ; then mkdir "$fails" ; cat out >> fails ; cp mnemonic_str "$fails" ; cp seed_hex "$fails" ; mv out "$fails" ; let "fails++" ; fi
+   if [[ "$?" != "0" && "$?" != "65" && "$?" != "125" ]] ; then mkdir "$fails" ; cat out >> fails ; cp mnemonic_str "$fails" ; cp seed_hex "$fails" ; mv out "$fails" ; let "fails++" ; fi
    mnemoniccli -v -m mnemonic_str -s seed_bin -f bin &>out
-   if [[ "$?" != "0" && "$?" != "65" ]] ; then mkdir "$fails" ; cat out >> fails ; cp mnemonic_str "$fails" ; cp seed_bin "$fails" ; mv out "$fails" ; let "fails++" ; fi
+   if [[ "$?" != "0" && "$?" != "65" && "$?" != "125" ]] ; then mkdir "$fails" ; cat out >> fails ; cp mnemonic_str "$fails" ; cp seed_bin "$fails" ; mv out "$fails" ; let "fails++" ; fi
  done
 
