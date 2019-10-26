@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 ENGLISH_DICTIONARY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'english.txt')
 PBKDF2_ROUNDS = 2048
 SEED_LEN = 64
+MAX_SEED_PASSWORD_LENGTH = 256
 
 
 def _xor_byte_strings(b1: bytes, b2: bytes) -> bytes:
@@ -76,7 +77,10 @@ class _DictionaryAccess:
         self._dict_dict = {}
         with open(file_path, 'r') as f:
             for i in range(2048):
-                line = next(f).strip()
+                try:
+                    line = next(f).strip()
+                except StopIteration:
+                    raise ValueError('Cannot instantiate dictionary')
                 if len(line) > 16 or len(line.split()) != 1:
                     raise ValueError('Cannot instantiate dictionary')
                 self._dict_list.append(line)
@@ -102,19 +106,15 @@ class Seed(bytes):
         :rtype: bool
         :return: True if seeds are the same, False otherwise.
         """
-        # > hmac.compare_digest` uses an approach designed to prevent timing
-        # > analysis by avoiding content-based short circuiting behaviour, making
-        #  > it appropriate for cryptography
-        # > https://docs.python.org/3.7/library/hmac.html#hmac.compare_digest
-        #
-        # > Note: If a and b are of different lengths, or if an error occurs,
-        # > a timing attack could theoretically reveal information about the types
-        #  > and lengths of a and b—but not their values.
-        #
-        # Type and length of seeds is known to the attacker, but not the value of expected seed.
+        result = 0
         if not isinstance(other, Seed):
-            return False
-        return hmac.compare_digest(self, other)
+            result = 1
+            s = self
+        else:
+            s = other
+        for b1, b2 in zip(self, s):
+            result |= b1 ^ b2
+        return result == 0
 
     def __ne__(self, other: object) -> bool:
         """Compare seeds in constant time to prevent timing attacks.
@@ -280,6 +280,7 @@ class Mnemonic(str, _DictionaryAccess):
         """Generate seed from the mnemonic phrase.
         Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
         (empty string) by default.
+        :raises ValueError: If `seed_password` is longer than 256 characters.
         :raises ValueError: on invalid parameters
         :rtype: Seed
         :return: Seed
@@ -287,7 +288,7 @@ class Mnemonic(str, _DictionaryAccess):
         if not isinstance(seed_password, str):
             raise TypeError('argument `seed_password` should be str, not {}'.format(type(seed_password).__name__))
         # the length of the password is bounded to 256
-        if len(seed_password) > 256:
+        if len(seed_password) > MAX_SEED_PASSWORD_LENGTH:
             raise ValueError('Password is too long')
         # the encoding of both inputs should be UTF-8 NFKD
         mnemonic = self.encode()  # encoding string into bytes, UTF-8 by default
@@ -309,6 +310,7 @@ def generate(entropy: Entropy, seed_password: str = '') -> Tuple[Mnemonic, Seed]
     Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
     (empty string) by default.
     :raises ValueError: on invalid parameters
+    :raises ValueError: If `seed_password` is longer than 256 characters.
     :rtype: Tuple[Mnemonic, Seed]
     :return: Two item tuple where first is mnemonic phrase and second is seed.
     """
@@ -327,6 +329,7 @@ def recover(mnemonic: Mnemonic, seed_password: str = '') -> Tuple[Entropy, Seed]
     Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
     (empty string) by default.
     :raises ValueError: on invalid parameters
+    :raises ValueError: If `seed_password` is longer than 256 characters.
     :rtype: Tuple[Entropy, Seed]
     :return: Two item tuple where first is initial entropy and second is seed.
     """
@@ -345,6 +348,7 @@ def verify(mnemonic: Mnemonic, expected_seed: Seed, seed_password: str = '') -> 
     Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
     (empty string) by default.
     :raises ValueError: on invalid parameters
+    :raises ValueError: If `seed_password` is longer than 256 characters.
     :rtype: bool
     :return: True if provided phrase generates expected seed, False otherwise.
     """

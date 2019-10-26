@@ -206,6 +206,11 @@ class TestPublicFunctions(TestCase):
             with self.assertRaisesRegex(TypeError, 'argument `seed_password` should be of type str'):
                 generate(self.VALID_ENTROPY, test_password)
 
+    def test_generate_invalid_password_too_long(self):
+        password = 'a' * 1024 * 1024  # 1 MB
+        with self.assertRaises(ValueError):
+            generate(self.VALID_ENTROPY, password)
+
     def test_recover(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             entropy, seed = recover(Mnemonic(test_vector[1]), TREZOR_PASSWORD)
@@ -221,6 +226,11 @@ class TestPublicFunctions(TestCase):
         for test_password in self.TESTING_TYPES + [b'\xff']:
             with self.assertRaisesRegex(TypeError, 'argument `seed_password` should be of type str'):
                 recover(self.VALID_MNEMONIC, test_password)
+
+    def test_recover_invalid_password_too_long(self):
+        password = 'a' * 1024 * 1024  # 1 MB
+        with self.assertRaises(ValueError):
+            recover(self.VALID_MNEMONIC, password)
 
     def test_verify(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
@@ -239,6 +249,11 @@ class TestPublicFunctions(TestCase):
         for test_password in self.TESTING_TYPES + [b'\xff']:
             with self.assertRaisesRegex(TypeError, 'argument `seed_password` should be of type str'):
                 verify(self.VALID_MNEMONIC, self.VALID_SEED, test_password)
+
+    def test_verify_invalid_password_too_long(self):
+        password = 'a' * 1024 * 1024  # 1 MB
+        with self.assertRaises(ValueError):
+            verify(self.VALID_MNEMONIC, self.VALID_SEED, password)
 
 
 # TODO add more tests (different from Trezor vector)
@@ -384,6 +399,13 @@ class TestMnemonic(TestCase):
                 with self.assertRaisesRegex(TypeError, r'argument `seed_password` should be str'):
                     # noinspection PyTypeChecker
                     mnemonic.to_seed(password)  # type: ignore
+
+    def test_toSeed_invalid_password_too_long(self):
+        mnemonic = Mnemonic('abandon abandon abandon abandon abandon abandon'
+                            ' abandon abandon abandon abandon abandon about')
+        password = 'a' * 1024 * 1024  # 1 MB
+        with self.assertRaises(ValueError):
+            mnemonic.to_seed(password)
 
     def test_to_entropy(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
