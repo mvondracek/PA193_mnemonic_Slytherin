@@ -444,6 +444,7 @@ class TestSeed(TestCase):
             Seed(unhexlify(test_vector[2]))
 
     def test___init___invalid_argument(self):
+        # noinspection SpellCheckingInspection
         test_cases_type = [None, '', '1234567890abcd', 'NonHexaString_!?', [b'']]
         for test in test_cases_type:
             with self.assertRaises(TypeError):
@@ -482,6 +483,7 @@ class TestEntropy(TestCase):
             Entropy(unhexlify(test_vector[0]))
 
     def test___init___invalid_argument(self):
+        # noinspection SpellCheckingInspection
         test_cases_type = [None, '', '1234567890abcd', 'NonHexaString_!?', [b'']]
         for test in test_cases_type:
             with self.assertRaises(TypeError):
