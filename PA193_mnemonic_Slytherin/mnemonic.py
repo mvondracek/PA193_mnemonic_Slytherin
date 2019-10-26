@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 ENGLISH_DICTIONARY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'english.txt')
 PBKDF2_ROUNDS = 2048
 SEED_LEN = 64
+MAX_SEED_PASSWORD_LENGTH = 256
 
 
 class dictionaryAccess:
@@ -184,9 +185,13 @@ class Mnemonic(str, dictionaryAccess):
         """Generate seed from the mnemonic phrase.
         Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
         (empty string) by default.
+        :raises ValueError: If `seed_password` is longer than 256 characters.
         :rtype: Seed
         :return: Seed
         """
+        # the length of the password is bounded to 256
+        if len(seed_password) > MAX_SEED_PASSWORD_LENGTH:
+            raise ValueError('Password is too long')
         # the encoding of both inputs should be UTF-8 NFKD
         mnemonic = self.encode()  # encoding string into bytes, UTF-8 by default
         passphrase = "mnemonic" + seed_password
@@ -206,6 +211,7 @@ def generate(entropy: Entropy, seed_password: str = '') -> Tuple[Mnemonic, Seed]
     Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
     (empty string) by default.
     :raises ValueError: on invalid parameters
+    :raises ValueError: If `seed_password` is longer than 256 characters.
     :rtype: Tuple[Mnemonic, Seed]
     :return: Two item tuple where first is mnemonic phrase and second is seed.
     """
@@ -224,6 +230,7 @@ def recover(mnemonic: Mnemonic, seed_password: str = '') -> Tuple[Entropy, Seed]
     Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
     (empty string) by default.
     :raises ValueError: on invalid parameters
+    :raises ValueError: If `seed_password` is longer than 256 characters.
     :rtype: Tuple[Entropy, Seed]
     :return: Two item tuple where first is initial entropy and second is seed.
     """
@@ -242,6 +249,7 @@ def verify(mnemonic: Mnemonic, expected_seed: Seed, seed_password: str = '') -> 
     Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
     (empty string) by default.
     :raises ValueError: on invalid parameters
+    :raises ValueError: If `seed_password` is longer than 256 characters.
     :rtype: bool
     :return: True if provided phrase generates expected seed, False otherwise.
     """

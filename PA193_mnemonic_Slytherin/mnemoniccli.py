@@ -22,6 +22,7 @@ from typing import Sequence
 
 from PA193_mnemonic_Slytherin import Entropy, Mnemonic, Seed
 from PA193_mnemonic_Slytherin import generate, recover, verify
+from PA193_mnemonic_Slytherin.mnemonic import MAX_SEED_PASSWORD_LENGTH
 
 __version__ = '0.1.0'
 __author__ = 'Team Slytherin: @sobuch, @lsolodkova, @mvondracek.'
@@ -109,6 +110,10 @@ class Config(object):
         :rtype: argparse.ArgumentParser
         :return: initialized parser
         """
+        def valid_password(password):
+            if len(password) > MAX_SEED_PASSWORD_LENGTH:
+                raise argparse.ArgumentTypeError("password is longer than {} characters".format(MAX_SEED_PASSWORD_LENGTH))
+            return password
         parser = argparse.ArgumentParser(
             prog=cls.PROGRAM_NAME,
             description=cls.PROGRAM_DESCRIPTION,
@@ -145,7 +150,8 @@ class Config(object):
                             )
         parser.add_argument('-p', '--password',
                             help='password for protection of seed',
-                            default=''
+                            default='',
+                            type=valid_password
                             )
         group = parser.add_mutually_exclusive_group(required=True)
         group.add_argument('-g', '--generate',
