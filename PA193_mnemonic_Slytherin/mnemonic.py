@@ -240,7 +240,10 @@ class Mnemonic(str, _DictionaryAccess):
         _dict_dict = {}
         with open(dictionary_file_path, 'r') as f:
             for i in range(2048):
-                line = next(f).strip()
+                try:
+                    line = next(f).strip()
+                except StopIteration:
+                    raise ValueError('Cannot instantiate dictionary')
                 if len(line) > 16 or len(line.split()) != 1:
                     raise ValueError('Cannot instantiate dictionary')  # TODO more descriptive message 1)
                 _dict_list.append(line)
