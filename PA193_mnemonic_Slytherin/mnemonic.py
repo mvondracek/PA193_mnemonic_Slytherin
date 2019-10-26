@@ -70,7 +70,10 @@ class dictionaryAccess:
         self._dict_dict = {}
         with open(file_path, 'r') as f:
             for i in range(2048):
-                line = next(f).strip()
+                try:
+                    line = next(f).strip()
+                except StopIteration:
+                    raise ValueError('Cannot instantiate dictionary')
                 if len(line) > 16 or len(line.split()) != 1:
                     raise ValueError('Cannot instantiate dictionary')
                 self._dict_list.append(line)
