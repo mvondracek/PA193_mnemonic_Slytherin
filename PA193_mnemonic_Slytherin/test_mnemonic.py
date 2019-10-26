@@ -373,7 +373,7 @@ class TestMnemonic(TestCase):
                     for i in range(lines):
                         f.write('word\n')
                 with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
-                    Mnemonic.checksum(self.VALID_MNEMONIC_PHRASE, dictionary_file_path=f.name)
+                    Mnemonic.checksum(VALID_MNEMONIC_PHRASE_TREZOR, dictionary_file_path=f.name)
 
     def test_checksum_invalid_dictionary_words_on_line(self):
         with TemporaryDirectory() as tmpdir:
