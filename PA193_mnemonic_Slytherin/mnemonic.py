@@ -26,7 +26,7 @@ PBKDF2_ROUNDS = 2048
 SEED_LEN = 64
 
 
-def xor_byte_strings(b1: bytes, b2: bytes) -> bytes:
+def _xor_byte_strings(b1: bytes, b2: bytes) -> bytes:
     """Function for XOR'ing two objects of byte type
     Reference implementation: https://en.wikipedia.org/wiki/XOR_cipher
     :rtype: bytes
@@ -35,7 +35,7 @@ def xor_byte_strings(b1: bytes, b2: bytes) -> bytes:
     return bytes([x ^ y for x, y in zip(b1, b2)])
 
 
-def pbkdf2_sha512(password: bytes, salt: bytes, iterations: int) -> bytes:
+def _pbkdf2_sha512(password: bytes, salt: bytes, iterations: int) -> bytes:
     """Password Based Key Derivation Function
     https://en.wikipedia.org/wiki/PBKDF2
     Uses HMAC-SHA512, derived key length is 512 bit
@@ -224,7 +224,7 @@ class Mnemonic(str, dictionaryAccess):
         seed_password = normalize('NFKD', seed_password)
         passphrase = "mnemonic" + seed_password
         passphrase = passphrase.encode()
-        return Seed(pbkdf2_sha512(mnemonic, passphrase, PBKDF2_ROUNDS))
+        return Seed(_pbkdf2_sha512(mnemonic, passphrase, PBKDF2_ROUNDS))
 
     def toEntropy(self) -> Entropy:
         """Generate entropy from the mnemonic phrase.
