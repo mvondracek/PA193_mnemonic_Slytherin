@@ -68,12 +68,14 @@ class Seed(bytes):
         :rtype: bool
         :return: True if seeds are the same, False otherwise.
         """
+        result = 0
         if not isinstance(other, Seed) or len(self) != len(other):
-            return False
+            result = 1
+            s = self
         else:
-            result = 0
-            for b1, b2 in zip(self, other):
-                result |= b1 ^ b2
+            s = other
+        for b1, b2 in zip(self, s):
+            result |= b1 ^ b2
         return result == 0
 
     def __ne__(self, other: object) -> bool:
