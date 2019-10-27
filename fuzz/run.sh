@@ -2,7 +2,7 @@
 
 handle_fail()
 {
-  let "fails++"; mkdir "$fails" ; cat out ; cat out >> fails ; mv out "$fails" ;
+  let "fails++"; mkdir "fail-$fails" ; cat out ; echo "Failed instance number $fails" >> fails ; cat out >> fails ; mv out "fail-$fails" ;
 }>&2
 
 fails=0
@@ -17,15 +17,15 @@ while true
    radamsa test_seed_hex > seed_hex
 
    mnemoniccli -g -e entropy_hex -s seed -m mnemonic -ll debug &>out
-   if [[ $? != 0 && $? != 65 ]] ; then handle_fail ; cp entropy_hex "$fails" ; fi
+   if [[ $? != 0 && $? != 65 ]] ; then handle_fail ; cp entropy_hex "fail-$fails" ; fi
    mnemoniccli -g -e entropy_bin -s seed -m mnemonic -f bin -ll debug &>out
-   if [[ $? != 0 && $? != 65 ]] ; then handle_fail ; cp entropy_bin "$fails" ; fi
+   if [[ $? != 0 && $? != 65 ]] ; then handle_fail ; cp entropy_bin "fail-$fails" ; fi
    mnemoniccli -r -m mnemonic_str -s seed -e entropy -ll debug &>out
-   if [[ $? != 0 && $? != 65 ]] ; then handle_fail ; cp mnemonic_str "$fails" ; fi
+   if [[ $? != 0 && $? != 65 ]] ; then handle_fail ; cp mnemonic_str "fail-$fails" ; fi
    mnemoniccli -v -m mnemonic_str -s seed_hex -ll debug &>out
-   if [[ $? != 0 && $? != 65 && $? != 125 ]] ; then handle_fail ; cp mnemonic_str "$fails" ; cp seed_hex "$fails" ; fi
+   if [[ $? != 0 && $? != 65 && $? != 125 ]] ; then handle_fail ; cp mnemonic_str "fail-$fails" ; cp seed_hex "fail-$fails" ; fi
    mnemoniccli -v -m mnemonic_str -s seed_bin -f bin -ll debug &>out
-   if [[ $? != 0 && $? != 65 && $? != 125 ]] ; then handle_fail ; cp mnemonic_str "$fails" ; cp seed_bin "$fails" ; fi
+   if [[ $? != 0 && $? != 65 && $? != 125 ]] ; then handle_fail ; cp mnemonic_str "fail-$fails" ; cp seed_bin "fail-$fails" ; fi
    runs=$((runs + 5))
    echo "Fails: $fails / $runs"
 done
