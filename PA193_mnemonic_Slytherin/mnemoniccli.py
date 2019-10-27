@@ -71,6 +71,14 @@ class Config(object):
         BINARY = 'bin'
         TEXT_HEXADECIMAL = 'hex'
 
+        @property
+        def read_mode(self):
+            return 'rb' if self is Config.Format.BINARY else 'r'
+
+        @property
+        def write_mode(self):
+            return 'wb' if self is Config.Format.BINARY else 'w'
+
     PROGRAM_NAME = 'mnemoniccli'
     PROGRAM_DESCRIPTION = 'BIP39 Mnemonic Phrase Generator and Verifier'
     LOGGING_LEVELS_DICT = {'debug': logging.DEBUG,
@@ -230,11 +238,9 @@ def cli_entry_point(argv=sys.argv):
 
 
 def action_generate(config: Config) -> ExitCode:
-    read_mode = 'rb' if config.format is Config.Format.BINARY else 'r'
-    write_mode = 'wb' if config.format is Config.Format.BINARY else 'w'
     # TODO Check file size before reading?
     try:
-        with open(config.entropy_filepath, read_mode) as file:
+        with open(config.entropy_filepath, config.format.read_mode) as file:
             entropy = file.read()  # type: typing.Union[bytes, str]
     except FileNotFoundError as e:
         logger.critical(str(e))
@@ -252,7 +258,7 @@ def action_generate(config: Config) -> ExitCode:
     with open(config.mnemonic_filepath, 'w') as file:
         file.write(mnemonic)
     logger.info('Mnemonic written to {}.'.format(config.mnemonic_filepath))
-    with open(config.seed_filepath, write_mode) as file:
+    with open(config.seed_filepath, config.format.write_mode) as file:
         if config.format is Config.Format.TEXT_HEXADECIMAL:
             seed = str(hexlify(seed), 'ascii')
         file.write(seed)
@@ -262,8 +268,6 @@ def action_generate(config: Config) -> ExitCode:
 
 
 def action_recover(config: Config) -> ExitCode:
-    read_mode = 'rb' if config.format is Config.Format.BINARY else 'r'
-    write_mode = 'wb' if config.format is Config.Format.BINARY else 'w'
     # TODO Check file size before reading?
     try:
         with open(config.mnemonic_filepath, 'r') as file:
@@ -279,12 +283,12 @@ def action_recover(config: Config) -> ExitCode:
         print(str(e), file=sys.stderr)
         return ExitCode.EX_DATAERR
     entropy, seed = recover(mnemonic, config.password)
-    with open(config.entropy_filepath, write_mode) as file:
+    with open(config.entropy_filepath, config.format.write_mode) as file:
         if config.format is Config.Format.TEXT_HEXADECIMAL:
             entropy = str(hexlify(entropy), 'ascii')
         file.write(entropy)
     logger.info('Entropy written to {}.'.format(config.entropy_filepath))
-    with open(config.seed_filepath, write_mode) as file:
+    with open(config.seed_filepath, config.format.write_mode) as file:
         if config.format is Config.Format.TEXT_HEXADECIMAL:
             seed = str(hexlify(seed), 'ascii')
         file.write(seed)
@@ -294,8 +298,6 @@ def action_recover(config: Config) -> ExitCode:
 
 
 def action_verify(config: Config) -> ExitCode:
-    read_mode = 'rb' if config.format is Config.Format.BINARY else 'r'
-    write_mode = 'wb' if config.format is Config.Format.BINARY else 'w'
     # TODO Check file size before reading?
     try:
         with open(config.mnemonic_filepath, 'r') as file:
@@ -312,7 +314,7 @@ def action_verify(config: Config) -> ExitCode:
         return ExitCode.EX_DATAERR
     # TODO Check file size before reading?
     try:
-        with open(config.seed_filepath, read_mode) as file:
+        with open(config.seed_filepath, config.format.read_mode) as file:
             seed = file.read()  # type: typing.Union[bytes, str]
     except FileNotFoundError as e:
         logger.critical(str(e))
