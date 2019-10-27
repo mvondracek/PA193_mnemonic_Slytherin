@@ -379,7 +379,8 @@ class TestMnemonic(TestCase):
     def test_checksum_invalid_dictionary_words_on_line(self):
         with TemporaryDirectory() as tmpdir:
             with open(os.path.join(tmpdir, '__dictionary_words_on_line__.txt'), 'w') as f:
-                for i in range(2047):  # 2047 because we will write last line `multiple words on single line` separately
+                for i in range(2047):
+                    # 2047 because we will write last line `multiple words on single line` separately
                     f.write('word_{}\n'.format(i))
                 f.write('multiple words on single line\n')
             with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
@@ -389,7 +390,8 @@ class TestMnemonic(TestCase):
         with TemporaryDirectory() as tmpdir:
             for word_lengths in [17, 18, 19]:
                 with open(os.path.join(tmpdir, '__dictionary_long_word__.txt'), 'w') as f:
-                    for i in range(2047):  # 2047 because we will write last line `multiple words on single line` separately
+                    for i in range(2047):
+                        # 2047 because we will write last line `multiple words on single line` separately
                         f.write('word_{}\n'.format(i))
                     f.write('a' * word_lengths + '\n')
                 with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
