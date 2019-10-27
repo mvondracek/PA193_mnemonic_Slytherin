@@ -12,9 +12,11 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 import hmac
 import logging
 import os
-from unicodedata import normalize
+from copy import deepcopy
 from hashlib import sha256, sha512
 from typing import Dict, List, Tuple
+from typing import Optional
+from unicodedata import normalize
 
 __author__ = 'Team Slytherin: @sobuch, @lsolodkova, @mvondracek.'
 
@@ -54,7 +56,7 @@ def _pbkdf2_sha512(password: bytes, salt: bytes, iterations: int) -> bytes:
     return f
 
 
-class dictionaryAccess:
+class _DictionaryAccess:
     """Abstract class for classes requiring dictionary access
     """
 
@@ -67,6 +69,10 @@ class dictionaryAccess:
         :rtype: Tuple[List[str], Dict[str, int]]
         :return: List and dictionary of words
         """
+        if not isinstance(file_path, str):
+            raise TypeError('argument `file_path` should be str, not {}'.format(
+                type(file_path).__name__))
+
         self._dict_list = []
         self._dict_dict = {}
         with open(file_path, 'r') as f:
@@ -93,7 +99,7 @@ class Seed(bytes):
         """
         if not isinstance(seed, bytes) or len(seed) != SEED_LEN:
             raise ValueError('Cannot instantiate seed')
-        self = seed
+        super().__init__()
 
     def __eq__(self, other: object) -> bool:
         """Compare seeds in constant time to prevent timing attacks.
@@ -118,7 +124,7 @@ class Seed(bytes):
         return not (self == other)
 
 
-class Entropy(bytes, dictionaryAccess):
+class Entropy(bytes, _DictionaryAccess):
     """Class for entropy representation.
     """
 
@@ -132,21 +138,23 @@ class Entropy(bytes, dictionaryAccess):
         > https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
         :raises ValueError: on invalid parameters
         """
-        dictionaryAccess.__init__(self)
-
-        if len(entropy) not in list(range(16, 32+1, 4)):
+        if not isinstance(entropy, bytes) or len(entropy) not in (16, 20, 24, 28, 32):
             raise ValueError('Cannot instantiate entropy')
-        self = entropy
+        super().__init__()
+        _DictionaryAccess.__init__(self)
+        self.__mnemonic = None  # type: Optional[Mnemonic]
 
-    def checksum(self, length: int) -> int:
-        """Calculate entropy checksum of set length
+    def checksum(self) -> int:
+        """Calculate checksum of this entropy based on its length
         :rtype: int
         :return: checksum
         """
         entropy_hash = sha256(self).digest()
-        return int.from_bytes(entropy_hash, byteorder='big') >> 256 - length
+        assert len(self) % 4 == 0
+        checksum_length = len(self) // 4
+        return int.from_bytes(entropy_hash, byteorder='big') >> (256 - checksum_length)
 
-    def toMnemonic(self) -> 'Mnemonic':
+    def to_mnemonic(self) -> 'Mnemonic':
         """Convert entropy to mnemonic phrase using dictionary.
         :rtype: Mnemonic
         :return: Mnemonic phrase
@@ -156,20 +164,22 @@ class Entropy(bytes, dictionaryAccess):
         into groups of 11 bits, each encoding a number from 0-2047, serving as an index into a
         wordlist.'
         """
-        shift = len(self) // 4
-        checksum = self.checksum(shift)
+        if not self.__mnemonic:
+            shift = len(self) // 4
+            checksum = self.checksum()
 
-        # Concatenated bits representing the indexes
-        indexes_bin = (int.from_bytes(self, byteorder='big') << shift) | checksum
+            # Concatenated bits representing the indexes
+            indexes_bin = (int.from_bytes(self, byteorder='big') << shift) | checksum
 
-        # List of indexes, number of which is MS = (ENT + CS) / 11 == shift * 3
-        indexes = [(indexes_bin >> i * 11) & 2047 for i in reversed(range(shift * 3))]
+            # List of indexes, number of which is MS = (ENT + CS) / 11 == shift * 3
+            indexes = [(indexes_bin >> i * 11) & 2047 for i in reversed(range(shift * 3))]
 
-        words = [self._dict_list[i] for i in indexes]
-        return Mnemonic(' '.join(words))
+            words = [self._dict_list[i] for i in indexes]
+            self.__mnemonic = Mnemonic(' '.join(words))
+        return deepcopy(self.__mnemonic)
 
 
-class Mnemonic(str, dictionaryAccess):
+class Mnemonic(str, _DictionaryAccess):
     """Class for mnemonic representation.
     """
 
@@ -177,20 +187,23 @@ class Mnemonic(str, dictionaryAccess):
         """Convert mnemonic phrase to entropy using dictionary to ensure its validity.
         :raises ValueError: on invalid parameters
         """
-        dictionaryAccess.__init__(self)
-
         if not isinstance(mnemonic, str):
-            raise ValueError('Cannot instantiate mnemonic')
+            raise TypeError('argument `mnemonic` should be str, not {}'.format(type(mnemonic).__name__))
+        super().__init__()
+        _DictionaryAccess.__init__(self)
 
         words = mnemonic.split()
         n_words = len(words)
-        if n_words not in (12, 15, 18, 21, 24):
-            raise ValueError('Cannot instantiate mnemonic')
+        valid_mnemonic_words_numbers = (12, 15, 18, 21, 24)
+        if n_words not in valid_mnemonic_words_numbers:
+            raise ValueError('argument `mnemonic` has invalid number of words, {} given, expected one of {}'
+                             .format(n_words, valid_mnemonic_words_numbers))
 
         try:
             indexes = [self._dict_dict[word] for word in words]
-        except KeyError:
-            raise ValueError('Cannot instantiate mnemonic')
+        except KeyError as e:
+            raise ValueError('argument `mnemonic` contains word {} which is not in current dictionary'
+                             .format(e.args[0]))
 
         # Concatenate indexes into single variable
         indexes_bin = sum([indexes[-i - 1] << i * 11 for i in reversed(range(n_words))])
@@ -198,17 +211,18 @@ class Mnemonic(str, dictionaryAccess):
         # Number of bits entropy is shifted by
         shift = n_words * 11 // 32
 
-        checksum = indexes_bin & (pow(2, shift) - 1)
+        checksum_included = indexes_bin & (pow(2, shift) - 1)
         entropy_bin = indexes_bin >> shift
         entropy = entropy_bin.to_bytes((n_words * 11 - shift) // 8, byteorder='big')
 
         self.__entropy = Entropy(entropy)
         # Check correctness
-        if checksum != self.__entropy.checksum(shift):
-            raise ValueError('Cannot instantiate mnemonic')
-        self = mnemonic
+        checksum_computed = self.__entropy.checksum()
+        if checksum_included != checksum_computed:
+            raise ValueError('argument `mnemonic` includes checksum {} different from computed {}'
+                             .format(checksum_included, checksum_computed))
 
-    def toSeed(self, seed_password: str = '') -> Seed:
+    def to_seed(self, seed_password: str = '') -> Seed:
         """Generate seed from the mnemonic phrase.
         Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
         (empty string) by default.
@@ -217,6 +231,8 @@ class Mnemonic(str, dictionaryAccess):
         :rtype: Seed
         :return: Seed
         """
+        if not isinstance(seed_password, str):
+            raise TypeError('argument `seed_password` should be str, not {}'.format(type(seed_password).__name__))
         # the length of the password is bounded to 256
         if len(seed_password) > MAX_SEED_PASSWORD_LENGTH:
             raise ValueError('Password is too long')
@@ -227,12 +243,12 @@ class Mnemonic(str, dictionaryAccess):
         passphrase = passphrase.encode()
         return Seed(_pbkdf2_sha512(mnemonic, passphrase, PBKDF2_ROUNDS))
 
-    def toEntropy(self) -> Entropy:
+    def to_entropy(self) -> Entropy:
         """Generate entropy from the mnemonic phrase.
         :rtype: Entropy
         :return: entropy
         """
-        return self.__entropy
+        return deepcopy(self.__entropy)
 
 
 def generate(entropy: Entropy, seed_password: str = '') -> Tuple[Mnemonic, Seed]:
@@ -245,12 +261,12 @@ def generate(entropy: Entropy, seed_password: str = '') -> Tuple[Mnemonic, Seed]
     :return: Two item tuple where first is mnemonic phrase and second is seed.
     """
     if not isinstance(entropy, Entropy):
-        raise TypeError('Expected Entropy, got {}'.format(type(entropy)))
+        raise TypeError('argument `entropy` should be of type Entropy, got {}'.format(type(entropy)))
     if not isinstance(seed_password, str):
-        raise TypeError('Expected str, got {}'.format(type(seed_password)))
+        raise TypeError('argument `seed_password` should be of type str, got {}'.format(type(seed_password)))
 
-    mnemonic = entropy.toMnemonic()
-    seed = mnemonic.toSeed(seed_password)
+    mnemonic = entropy.to_mnemonic()
+    seed = mnemonic.to_seed(seed_password)
     return mnemonic, seed
 
 
@@ -264,12 +280,12 @@ def recover(mnemonic: Mnemonic, seed_password: str = '') -> Tuple[Entropy, Seed]
     :return: Two item tuple where first is initial entropy and second is seed.
     """
     if not isinstance(mnemonic, Mnemonic):
-        raise TypeError('Expected Mnemonic, got {}'.format(type(mnemonic)))
+        raise TypeError('argument `mnemonic` should be of type Mnemonic, got {}'.format(type(mnemonic)))
     if not isinstance(seed_password, str):
-        raise TypeError('Expected str, got {}'.format(type(seed_password)))
+        raise TypeError('argument `seed_password` should be of type str, got {}'.format(type(seed_password)))
 
-    entropy = mnemonic.toEntropy()
-    seed = mnemonic.toSeed(seed_password)
+    entropy = mnemonic.to_entropy()
+    seed = mnemonic.to_seed(seed_password)
     return entropy, seed
 
 
@@ -283,11 +299,11 @@ def verify(mnemonic: Mnemonic, expected_seed: Seed, seed_password: str = '') -> 
     :return: True if provided phrase generates expected seed, False otherwise.
     """
     if not isinstance(expected_seed, Seed):
-        raise TypeError('Expected Seed, got {}'.format(type(expected_seed)))
+        raise TypeError('argument `expected_seed` should be of type Seed, got {}'.format(type(expected_seed)))
     if not isinstance(mnemonic, Mnemonic):
-        raise TypeError('Expected Mnemonic, got {}'.format(type(mnemonic)))
+        raise TypeError('argument `mnemonic` should be of type Mnemonic, got {}'.format(type(mnemonic)))
     if not isinstance(seed_password, str):
-        raise TypeError('Expected str, got {}'.format(type(seed_password)))
+        raise TypeError('argument `seed_password` should be of type str, got {}'.format(type(seed_password)))
 
-    generated_seed = mnemonic.toSeed(seed_password)
+    generated_seed = mnemonic.to_seed(seed_password)
     return expected_seed == generated_seed
