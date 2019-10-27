@@ -390,3 +390,34 @@ class TestMain(unittest.TestCase):
                                          '-s', seed_path], ExitCode.EX_DATAERR,
                                         stdout_check='',
                                         stderr_check=stderr)
+
+    def test_verify_missing_seed_file(self):
+        with TemporaryDirectory() as tmpdir:
+            non_existing_filepath = os.path.join(tmpdir, '__this_file_does_not_exist__')
+            for io_format in Config.Format:
+                mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
+                with open(mnemonic_path, 'w') as mnemonic_file:
+                    mnemonic_file.write(VALID_MNEMONIC_PHRASE_TREZOR)
+                self.assert_program([self.SCRIPT, '-v', '--format', io_format.value,
+                                     '-m', mnemonic_path,
+                                     '-s', non_existing_filepath], ExitCode.EX_NOINPUT,
+                                    stdout_check='',
+                                    stderr_check=None)
+
+    def test_verify_missing_mnemonic_file(self):
+        valid_seeds = [
+            (unhexlify(VALID_SEED_HEX_TREZOR), Config.Format.BINARY),
+            (VALID_SEED_HEX_TREZOR, Config.Format.TEXT_HEXADECIMAL),
+        ]
+        with TemporaryDirectory() as tmpdir:
+            for seed, io_format in valid_seeds:
+                write_mode = 'wb' if io_format is Config.Format.BINARY else 'w'
+                seed_path = os.path.join(tmpdir, '__seed__')
+                mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
+                with open(seed_path, write_mode) as seed_file:
+                    seed_file.write(seed)
+                self.assert_program([self.SCRIPT, '-v', '--format', io_format.value,
+                                     '-m', mnemonic_path,
+                                     '-s', seed_path], ExitCode.EX_NOINPUT,
+                                    stdout_check='',
+                                    stderr_check=None)
