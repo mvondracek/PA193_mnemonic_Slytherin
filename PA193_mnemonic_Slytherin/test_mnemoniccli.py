@@ -13,14 +13,70 @@ import os
 import subprocess
 import unittest
 from binascii import hexlify, unhexlify
-from io import StringIO
 from contextlib import redirect_stdout, redirect_stderr
+from io import StringIO
 from tempfile import TemporaryDirectory
-from typing import Optional, List
+from typing import Optional, List, Tuple, Union
 
-from PA193_mnemonic_Slytherin.mnemonic import MAX_SEED_PASSWORD_LENGTH
+from PA193_mnemonic_Slytherin.mnemonic import MAX_SEED_PASSWORD_LENGTH, SEED_LEN
 from PA193_mnemonic_Slytherin.mnemoniccli import ExitCode, cli_entry_point, Config
-from PA193_mnemonic_Slytherin.test_mnemonic import TREZOR_TEST_VECTORS, TREZOR_PASSWORD
+from PA193_mnemonic_Slytherin.test_mnemonic import TREZOR_TEST_VECTORS, TREZOR_PASSWORD, \
+    VALID_SEED_HEX_TREZOR, VALID_MNEMONIC_PHRASE_TREZOR
+
+
+def get_invalid_entropies() -> List[Tuple[Union[str, bytes], Config.Format, Optional[str]]]:
+    """
+    > The mnemonic must encode entropy in a multiple of 32 bits. With more entropy security is improved but
+    > the sentence length increases. We refer to the initial entropy length as ENT. The allowed size of ENT
+    > is 128-256 bits.
+    > https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
+
+    :return: List of invalid examples as tuples, where first is invalid input,
+             second is format of this input, and third is optional error
+             message to be checked on program's stderr.
+    """
+    invalid_entropies = []
+    # region invalid length
+    entropy_byte = b'\x01'
+    valid_entropy_bytes_lengths = (16, 20, 24, 28, 32)
+    for entropy_bytes_length in range(0, 40):
+        if entropy_bytes_length not in valid_entropy_bytes_lengths:
+            invalid_entropies.append((entropy_byte * entropy_bytes_length, Config.Format.BINARY, None))
+            invalid_entropies.append((str(hexlify(entropy_byte * entropy_bytes_length), 'ascii'),
+                                      Config.Format.TEXT_HEXADECIMAL, None))
+    # endregion
+    # TODO invalid characters in hex string
+    return invalid_entropies
+
+
+def get_invalid_mnemonics() -> List[Tuple[str, Optional[str]]]:
+    """
+    :return: List of invalid examples as tuples, where first is invalid input,
+             and second is optional error message to be checked on
+             program's stderr.
+    """
+    invalid_mnemonics = [('this is invalid mnemonic', None)]  # TODO gather invalid mnemonics from tests
+    # TODO invalid UTF-8 sequences
+    return invalid_mnemonics
+
+
+def get_invalid_seeds() -> List[Tuple[Union[str, bytes], Config.Format, Optional[str]]]:
+    """
+    :return: List of invalid examples as tuples, where first is invalid input,
+             second is format of this input, and third is optional error
+             message to be checked on program's stderr.
+    """
+    invalid_seeds = []
+    # region invalid length
+    seed_byte = b'\xff'
+    for seed_bytes_length in range(0, SEED_LEN + 3):
+        if seed_bytes_length != SEED_LEN:
+            invalid_seeds.append((seed_byte * seed_bytes_length, Config.Format.BINARY, None))
+            invalid_seeds.append((str(hexlify(seed_byte * seed_bytes_length), 'ascii'),
+                                  Config.Format.TEXT_HEXADECIMAL, None))
+    # endregion
+    # TODO invalid characters in hex string
+    return invalid_seeds
 
 
 class TestMain(unittest.TestCase):
@@ -164,31 +220,6 @@ class TestMain(unittest.TestCase):
             self.assert_program_error([self.SCRIPT, '-v', '-m', non_existing_filepath, '-s', f.name],
                                       ExitCode.EX_NOINPUT)
 
-    def test_invalid_entropy(self):
-        """Invalid input file with entropy
-        > The mnemonic must encode entropy in a multiple of 32 bits. With more entropy security is improved but
-        > the sentence length increases. We refer to the initial entropy length as ENT. The allowed size of ENT
-        > is 128-256 bits.
-        > https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
-        """
-        with TemporaryDirectory() as tmpdir:
-            non_existing_filepath = os.path.join(tmpdir, '__this_file_does_not_exist__')
-            # binary input file
-            # basic byte of entropy for this test
-            entropy_byte = b'\x01'
-            valid_entropy_bytes_lengths = (16, 20, 24, 28, 32)
-            for entropy_bytes_length in range(0, 40):
-                if entropy_bytes_length in valid_entropy_bytes_lengths:
-                    continue
-                with self.subTest(entropy_bytes_length=entropy_bytes_length):
-                    with open(os.path.join(tmpdir, '__entropy_binary__.dat'), 'wb') as f:
-                        f.write(entropy_byte * entropy_bytes_length)
-                    self.assert_program([self.SCRIPT, '-g', '--format', 'bin',
-                                         '-e', f.name,
-                                         '-m', non_existing_filepath,
-                                         '-s', non_existing_filepath], ExitCode.EX_DATAERR,
-                                        stdout_check='', stderr_check=None)
-
     def test_generate(self):
         with TemporaryDirectory() as tmpdir:
             for test_vector in TREZOR_TEST_VECTORS['english']:
@@ -216,6 +247,23 @@ class TestMain(unittest.TestCase):
                             self.assertEqual(test_vector[2], seed)
                         with open(mnemonic_path, 'r') as mnemonic_file:
                             self.assertEqual(test_vector[1], mnemonic_file.read())
+
+    def test_generate_invalid_entropy(self):
+        with TemporaryDirectory() as tmpdir:
+            for entropy, io_format, stderr in get_invalid_entropies():
+                write_mode = 'wb' if io_format is Config.Format.BINARY else 'w'
+                with self.subTest(entropy=entropy, io_format=io_format):
+                    seed_path = os.path.join(tmpdir, '__seed__')
+                    mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
+                    entropy_path = os.path.join(tmpdir, '__entropy__')
+                    with open(entropy_path, write_mode) as entropy_file:
+                        entropy_file.write(entropy)
+                    self.assert_program([self.SCRIPT, '-g', '--format', io_format.value,
+                                         '-e', entropy_path,
+                                         '-m', mnemonic_path,
+                                         '-s', seed_path], ExitCode.EX_DATAERR,
+                                        stdout_check='',
+                                        stderr_check=stderr)
 
     def test_recover(self):
         with TemporaryDirectory() as tmpdir:
@@ -246,6 +294,22 @@ class TestMain(unittest.TestCase):
                                 entropy = str(hexlify(content), 'ascii')
                             self.assertEqual(test_vector[0], entropy)
 
+    def test_recover_invalid_mnemonic(self):
+        with TemporaryDirectory() as tmpdir:
+            for mnemonic, stderr in get_invalid_mnemonics():
+                with self.subTest(mnemonic=mnemonic):
+                    seed_path = os.path.join(tmpdir, '__seed__')
+                    mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
+                    entropy_path = os.path.join(tmpdir, '__entropy__')
+                    with open(mnemonic_path, 'w') as mnemonic_file:
+                        mnemonic_file.write(mnemonic)
+                    self.assert_program([self.SCRIPT, '-r',
+                                         '-e', entropy_path,
+                                         '-m', mnemonic_path,
+                                         '-s', seed_path], ExitCode.EX_DATAERR,
+                                        stdout_check='',
+                                        stderr_check=stderr)
+
     def test_verify(self):
         with TemporaryDirectory() as tmpdir:
             for test_vector in TREZOR_TEST_VECTORS['english']:
@@ -264,3 +328,42 @@ class TestMain(unittest.TestCase):
                                              '-s', seed_path], ExitCode.EX_OK,
                                             stdout_check='Seeds match.\n',
                                             stderr_check='')
+
+    def test_verify_invalid_mnemonic(self):
+        valid_seeds = [
+            (unhexlify(VALID_SEED_HEX_TREZOR), Config.Format.BINARY),
+            (VALID_SEED_HEX_TREZOR, Config.Format.TEXT_HEXADECIMAL),
+        ]
+        with TemporaryDirectory() as tmpdir:
+            for seed, io_format in valid_seeds:
+                for mnemonic, stderr in get_invalid_mnemonics():
+                    write_mode = 'wb' if io_format is Config.Format.BINARY else 'w'
+                    with self.subTest(mnemonic=mnemonic, seed=seed, io_format=io_format):
+                        seed_path = os.path.join(tmpdir, '__seed__')
+                        mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
+                        with open(mnemonic_path, 'w') as mnemonic_file:
+                            mnemonic_file.write(mnemonic)
+                        with open(seed_path, write_mode) as seed_file:
+                            seed_file.write(seed)
+                        self.assert_program([self.SCRIPT, '-v', '--format', io_format.value,
+                                             '-m', mnemonic_path,
+                                             '-s', seed_path], ExitCode.EX_DATAERR,
+                                            stdout_check='',
+                                            stderr_check=stderr)
+
+    def test_verify_invalid_seed(self):
+        with TemporaryDirectory() as tmpdir:
+            for seed, io_format, stderr in get_invalid_seeds():
+                write_mode = 'wb' if io_format is Config.Format.BINARY else 'w'
+                with self.subTest(mnemonic=VALID_MNEMONIC_PHRASE_TREZOR, seed=seed, io_format=io_format):
+                    seed_path = os.path.join(tmpdir, '__seed__')
+                    mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
+                    with open(mnemonic_path, 'w') as mnemonic_file:
+                        mnemonic_file.write(VALID_MNEMONIC_PHRASE_TREZOR)
+                    with open(seed_path, write_mode) as seed_file:
+                        seed_file.write(seed)
+                    self.assert_program([self.SCRIPT, '-v', '--format', io_format.value,
+                                         '-m', mnemonic_path,
+                                         '-s', seed_path], ExitCode.EX_DATAERR,
+                                        stdout_check='',
+                                        stderr_check=stderr)
