@@ -14,7 +14,7 @@ from binascii import unhexlify
 from tempfile import TemporaryDirectory
 from unittest import TestCase
 
-from PA193_mnemonic_Slytherin.mnemonic import Entropy, Mnemonic, Seed, _DictionaryAccess
+from PA193_mnemonic_Slytherin.mnemonic import Entropy, Mnemonic, Seed, _DictionaryAccess, ENGLISH_DICTIONARY_PATH
 from PA193_mnemonic_Slytherin.mnemonic import generate, recover, verify
 
 # Test vectors by Trezor. Organized as entropy, mnemonic, seed, xprv
@@ -178,6 +178,145 @@ VALID_SEED_HEX_TREZOR = TREZOR_TEST_VECTORS['english'][0][2]
 VALID_PASSWORD_TREZOR = TREZOR_PASSWORD
 
 
+def extract_checksum(mnemonic_phrase: str, dictionary_file_path: str = ENGLISH_DICTIONARY_PATH) -> int:
+    """Extract checksum based on words from the mnemonic phrase and given dictionary.
+    :raises ValueError: Cannot instantiate dictionary  # TODO more descriptive message 1)
+    :raises ValueError: Cannot instantiate dictionary  # TODO more descriptive message 2)
+    :raises TypeError: `mnemonic_phrase` is not instance of `str`.
+    :raises ValueError: `mnemonic_phrase` has invalid number of words, expected one of (12, 15, 18, 21, 24).
+    :raises ValueError: `mnemonic_phrase` contains word which is not in current dictionary.
+    """
+    if not isinstance(dictionary_file_path, str):
+        raise TypeError('argument `dictionary_file_path` should be str, not {}'.format(
+            type(dictionary_file_path).__name__))
+
+    # region TODO copied from _DictionaryAccess.__init__
+    _dict_list = []
+    _dict_dict = {}
+    with open(dictionary_file_path, 'r') as f:
+        for i in range(2048):
+            try:
+                line = next(f).strip()
+            except StopIteration:
+                raise ValueError('Cannot instantiate dictionary')
+            if len(line) > 16 or len(line.split()) != 1:
+                raise ValueError('Cannot instantiate dictionary')  # TODO more descriptive message 1)
+            _dict_list.append(line)
+            _dict_dict[line] = i
+        if f.read():
+            raise ValueError('Cannot instantiate dictionary')  # TODO more descriptive message 2)
+    # endregion
+
+    # region TODO copied from Mnemonic.__init__
+    if not isinstance(mnemonic_phrase, str):
+        raise TypeError('argument `mnemonic_phrase` should be str, not {}'.format(type(mnemonic_phrase).__name__))
+
+    words = mnemonic_phrase.split()
+    n_words = len(words)
+    valid_mnemonic_words_numbers = (12, 15, 18, 21, 24)
+    if n_words not in valid_mnemonic_words_numbers:
+        raise ValueError('argument `mnemonic_phrase` has invalid number of words, {} given, expected one of {}'
+                         .format(n_words, valid_mnemonic_words_numbers))
+
+    try:
+        indexes = [_dict_dict[word] for word in words]
+    except KeyError as e:
+        raise ValueError('argument `mnemonic_phrase` contains word {} which is not in current dictionary'
+                         .format(e.args[0]))
+
+    # Concatenate indexes into single variable
+    indexes_bin = sum([indexes[-i - 1] << i * 11 for i in reversed(range(n_words))])
+
+    # Number of bits entropy is shifted by
+    shift = n_words * 11 // 32
+
+    checksum_included = indexes_bin & (pow(2, shift) - 1)
+    # endregion
+    return checksum_included
+
+
+# noinspection PyPep8Naming
+class TestInternalTestHelpers(TestCase):
+    def test_extract_checksum(self):
+        for test_vector in TREZOR_TEST_VECTORS['english']:
+            with self.subTest(mnemonic=test_vector[1]):
+                entropy = Entropy(unhexlify(test_vector[0]))
+                checksum = extract_checksum(test_vector[1])
+                # See `TestEntropy.test_checksum`.
+                self.assertEqual(entropy.checksum(), checksum)
+
+    def test_extract_checksum_invalid_mnemonic(self):
+        for test_input in [
+            None,
+            123,
+            b'\xff',
+            [None]
+        ]:
+            with self.assertRaisesRegex(TypeError, 'argument `mnemonic_phrase` should be str'):
+                # noinspection PyTypeChecker
+                extract_checksum(test_input)  # type: ignore
+
+        for test_input in [
+            '',
+            'abandon ' * 11,
+            VALID_MNEMONIC_PHRASE_TREZOR + ' abandon',
+        ]:
+            with self.assertRaisesRegex(ValueError, 'argument `mnemonic_phrase` has invalid number of words'):
+                extract_checksum(test_input)
+
+        for test_input in [
+            'test_ string_ not_ in_ dictionary_ test_ string_ not_ in_ dictionary_ test_ test_',
+            'あいいここあくしんん ' * 12,
+            'not_in_dictionary ' * 12,
+        ]:
+            with self.subTest(test_input=test_input):
+                with self.assertRaisesRegex(ValueError,
+                                            r'argument `mnemonic_phrase` contains word (.+) which is not in '
+                                            r'current dictionary'):
+                    extract_checksum(test_input)
+
+    def test_extract_checksum_invalid_dictionary_file_path(self):
+        for test_input in [
+            None,
+            123,
+            b'\xff',
+            [None]
+        ]:
+            with self.assertRaisesRegex(TypeError, 'argument `dictionary_file_path` should be str'):
+                # noinspection PyTypeChecker
+                extract_checksum(VALID_MNEMONIC_PHRASE_TREZOR, test_input)  # type: ignore
+
+    def test_extract_checksum_invalid_dictionary_lines(self):
+        with TemporaryDirectory() as tmpdir:
+            for lines in [0, 1, 2, 2046, 2047, 2049, 2050, 2051]:
+                with open(os.path.join(tmpdir, '__dictionary_lines__.txt'), 'w') as f:
+                    for i in range(lines):
+                        f.write('word\n')
+                with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
+                    extract_checksum(VALID_MNEMONIC_PHRASE_TREZOR, dictionary_file_path=f.name)
+
+    def test_extract_checksum_invalid_dictionary_words_on_line(self):
+        with TemporaryDirectory() as tmpdir:
+            with open(os.path.join(tmpdir, '__dictionary_words_on_line__.txt'), 'w') as f:
+                for i in range(2047):
+                    # 2047 because we will write last line `multiple words on single line` separately
+                    f.write('word_{}\n'.format(i))
+                f.write('multiple words on single line\n')
+            with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
+                extract_checksum(VALID_MNEMONIC_PHRASE_TREZOR, dictionary_file_path=f.name)
+
+    def test_extract_checksum_invalid_dictionary_long_word(self):
+        with TemporaryDirectory() as tmpdir:
+            for word_lengths in [17, 18, 19]:
+                with open(os.path.join(tmpdir, '__dictionary_long_word__.txt'), 'w') as f:
+                    for i in range(2047):
+                        # 2047 because we will write last line `multiple words on single line` separately
+                        f.write('word_{}\n'.format(i))
+                    f.write('a' * word_lengths + '\n')
+                with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
+                    extract_checksum(VALID_MNEMONIC_PHRASE_TREZOR, dictionary_file_path=f.name)
+
+
 class TestPublicFunctions(TestCase):
     """Tests for public functions of mnemonic module.
     Tests for `generate`, `recover`, and `verify` are similar, but we want to
@@ -318,85 +457,6 @@ class TestMnemonic(TestCase):
         with self.assertRaises(ValueError):
             Mnemonic('a' * 1024 * 1024)  # 1 MB
 
-    def test_checksum(self):
-        # TODO Could we check `Mnemonic.checksum` without `Entropy.checksum`? See `TestEntropy.test_checksum`.
-        for test_vector in TREZOR_TEST_VECTORS['english']:
-            with self.subTest(mnemonic=test_vector[1]):
-                entropy = Entropy(unhexlify(test_vector[0]))
-                checksum = Mnemonic.checksum(test_vector[1])
-                self.assertEqual(entropy.checksum(), checksum)
-
-    def test_checksum_invalid_mnemonic(self):
-        for test_input in [
-            None,
-            123,
-            b'\xff',
-            [None]
-        ]:
-            with self.assertRaisesRegex(TypeError, 'argument `mnemonic` should be str'):
-                # noinspection PyTypeChecker
-                Mnemonic.checksum(test_input)  # type: ignore
-
-        for test_input in [
-            '',
-            'abandon ' * 11,
-            VALID_MNEMONIC_PHRASE_TREZOR + ' abandon',
-        ]:
-            with self.assertRaisesRegex(ValueError, 'argument `mnemonic` has invalid number of words'):
-                Mnemonic.checksum(test_input)
-
-        for test_input in [
-            'test_ string_ not_ in_ dictionary_ test_ string_ not_ in_ dictionary_ test_ test_',
-            'あいいここあくしんん ' * 12,
-            'not_in_dictionary ' * 12,
-        ]:
-            with self.subTest(test_input=test_input):
-                with self.assertRaisesRegex(ValueError,
-                                            r'argument `mnemonic` contains word (.+) which is not in '
-                                            r'current dictionary'):
-                    Mnemonic.checksum(test_input)
-
-    def test_checksum_invalid_dictionary_file_path(self):
-        for test_input in [
-            None,
-            123,
-            b'\xff',
-            [None]
-        ]:
-            with self.assertRaisesRegex(TypeError, 'argument `dictionary_file_path` should be str'):
-                # noinspection PyTypeChecker
-                Mnemonic.checksum(VALID_MNEMONIC_PHRASE_TREZOR, test_input)  # type: ignore
-
-    def test_checksum_invalid_dictionary_lines(self):
-        with TemporaryDirectory() as tmpdir:
-            for lines in [0, 1, 2, 2046, 2047, 2049, 2050, 2051]:
-                with open(os.path.join(tmpdir, '__dictionary_lines__.txt'), 'w') as f:
-                    for i in range(lines):
-                        f.write('word\n')
-                with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
-                    Mnemonic.checksum(VALID_MNEMONIC_PHRASE_TREZOR, dictionary_file_path=f.name)
-
-    def test_checksum_invalid_dictionary_words_on_line(self):
-        with TemporaryDirectory() as tmpdir:
-            with open(os.path.join(tmpdir, '__dictionary_words_on_line__.txt'), 'w') as f:
-                for i in range(2047):
-                    # 2047 because we will write last line `multiple words on single line` separately
-                    f.write('word_{}\n'.format(i))
-                f.write('multiple words on single line\n')
-            with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
-                Mnemonic.checksum(VALID_MNEMONIC_PHRASE_TREZOR, dictionary_file_path=f.name)
-
-    def test_checksum_invalid_dictionary_long_word(self):
-        with TemporaryDirectory() as tmpdir:
-            for word_lengths in [17, 18, 19]:
-                with open(os.path.join(tmpdir, '__dictionary_long_word__.txt'), 'w') as f:
-                    for i in range(2047):
-                        # 2047 because we will write last line `multiple words on single line` separately
-                        f.write('word_{}\n'.format(i))
-                    f.write('a' * word_lengths + '\n')
-                with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
-                    Mnemonic.checksum(VALID_MNEMONIC_PHRASE_TREZOR, dictionary_file_path=f.name)
-
     def test_to_seed(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             with self.subTest(mnemonic=test_vector[1]):
@@ -510,12 +570,12 @@ class TestEntropy(TestCase):
                 Entropy(test)
 
     def test_checksum(self):
-        # TODO Could we check `Entropy.checksum` without `Mnemonic.checksum`? See `TestMnemonic.test_checksum`.
         for test_vector in TREZOR_TEST_VECTORS['english']:
             with self.subTest(entropy=test_vector[0]):
-                checksum_from_mnemonic = Mnemonic.checksum(test_vector[1])
+                # See `TestInternalTestHelpers.test_extract_checksum`.
+                checksum_from_mnemonic_phrase = extract_checksum(test_vector[1])
                 entropy = Entropy(unhexlify(test_vector[0]))
-                self.assertEqual(checksum_from_mnemonic, entropy.checksum())
+                self.assertEqual(checksum_from_mnemonic_phrase, entropy.checksum())
 
     def test_to_mnemonic(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
