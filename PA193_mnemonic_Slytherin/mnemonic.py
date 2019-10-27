@@ -11,17 +11,19 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 """
 import hmac
 import logging
-import os
 from unicodedata import normalize
+from contextlib import closing
 from hashlib import sha256, sha512
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, BinaryIO
+
+import pkg_resources
 
 __author__ = 'Team Slytherin: @sobuch, @lsolodkova, @mvondracek.'
 
 logger = logging.getLogger(__name__)
 
 
-ENGLISH_DICTIONARY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'english.lst')
+ENGLISH_DICTIONARY_NAME = 'english.lst'
 PBKDF2_ROUNDS = 2048
 SEED_LEN = 64
 MAX_SEED_PASSWORD_LENGTH = 256
@@ -58,18 +60,30 @@ class dictionaryAccess:
     """Abstract class for classes requiring dictionary access
     """
 
-    def __init__(self, file_path: str = ENGLISH_DICTIONARY_PATH):
+    def __init__(self, dictionary_name: str = ENGLISH_DICTIONARY_NAME):
         """Load the dictionary.
         Currently uses 1 default dictionary with English words.
         # TODO Should we support multiple dictionaries for various languages?
         :raises FileNotFoundError: on missing file
+        :raises PermissionError: If dictionary could not be retrieved due to denied permission.  # TODO test this
         :raises ValueError: on invalid dictionary
         :rtype: Tuple[List[str], Dict[str, int]]
         :return: List and dictionary of words
         """
         self._dict_list = []
         self._dict_dict = {}
-        with open(file_path, 'r') as f:
+
+        # > Normally, you should try to use resource_string or resource_stream,
+        # > unless you are interfacing with code you don't control (especially
+        # > C code) that absolutely must have a filename. The reason is that if
+        # > you ask for a filename, and your package is packed into a zipfile,
+        # > then the resource must be extracted to a temporary directory, which
+        # > is a more costly operation than just returning a string or
+        # > file-like object.
+        # > http://peak.telecommunity.com/DevCenter/PythonEggs#accessing-package-resources
+        # > from https://setuptools.readthedocs.io/en/latest/setuptools.html#accessing-data-files-at-runtime
+        dictionary = pkg_resources.resource_stream(__package__, dictionary_name)  # type: BinaryIO
+        with closing(dictionary) as f:
             for i in range(2048):
                 try:
                     line = next(f).strip()
