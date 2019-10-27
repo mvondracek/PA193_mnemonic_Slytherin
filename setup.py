@@ -35,6 +35,9 @@ setup(
 
     python_requires='>=3.5, <4',
     packages=['PA193_mnemonic_Slytherin'],
+    package_data={
+        'PA193_mnemonic_Slytherin': ['*.lst'],
+    },
     tests_require=[
         'nose',
         'coverage',
