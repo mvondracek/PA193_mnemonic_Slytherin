@@ -316,7 +316,7 @@ class TestMnemonic(TestCase):
     def test___init___too_long_str(self):
         """Too long mnemonic phrase."""
         with self.assertRaises(ValueError):
-            Mnemonic('a' * 1024 * 1024 * 1024 * 2)  # 2 GB
+            Mnemonic('a' * 1024 * 1024)  # 1 MB
 
     def test_checksum(self):
         # TODO Could we check `Mnemonic.checksum` without `Entropy.checksum`? See `TestEntropy.test_checksum`.
