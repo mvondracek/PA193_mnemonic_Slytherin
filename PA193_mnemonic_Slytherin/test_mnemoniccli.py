@@ -329,6 +329,29 @@ class TestMain(unittest.TestCase):
                                             stdout_check='Seeds match.\n',
                                             stderr_check='')
 
+    def test_verify_seeds_do_not_match(self):
+        # valid mnemonic and valid seeds, but seeds and mnemonic do not match
+        mnemonic = TREZOR_TEST_VECTORS['english'][0][1]
+        valid_seeds = [
+            (unhexlify(TREZOR_TEST_VECTORS['english'][1][2]), Config.Format.BINARY),
+            (TREZOR_TEST_VECTORS['english'][2][2], Config.Format.TEXT_HEXADECIMAL),
+        ]
+        with TemporaryDirectory() as tmpdir:
+            for seed, io_format in valid_seeds:
+                write_mode = 'wb' if io_format is Config.Format.BINARY else 'w'
+                with self.subTest(mnemonic=mnemonic, seed=seed, io_format=io_format):
+                    seed_path = os.path.join(tmpdir, '__seed__')
+                    mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
+                    with open(mnemonic_path, 'w') as mnemonic_file:
+                        mnemonic_file.write(mnemonic)
+                    with open(seed_path, write_mode) as seed_file:
+                        seed_file.write(seed)
+                    self.assert_program([self.SCRIPT, '-v', '--format', io_format.value,
+                                         '-m', mnemonic_path,
+                                         '-s', seed_path], ExitCode.SEEDS_DO_NOT_MATCH,
+                                        stdout_check='',
+                                        stderr_check='Seeds do not match.\n')
+
     def test_verify_invalid_mnemonic(self):
         valid_seeds = [
             (unhexlify(VALID_SEED_HEX_TREZOR), Config.Format.BINARY),
