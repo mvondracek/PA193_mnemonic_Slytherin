@@ -23,7 +23,7 @@ __author__ = 'Team Slytherin: @sobuch, @lsolodkova, @mvondracek.'
 logger = logging.getLogger(__name__)
 
 
-ENGLISH_DICTIONARY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'english.txt')
+ENGLISH_DICTIONARY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'english.lst')
 PBKDF2_ROUNDS = 2048
 SEED_LEN = 64
 MAX_SEED_PASSWORD_LENGTH = 256
