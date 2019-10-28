@@ -81,7 +81,7 @@ def get_invalid_seeds() -> List[Tuple[Union[str, bytes], Config.Format, Optional
 
 class TestMain(unittest.TestCase):
     """Integration tests for CLI tool."""
-    TIMEOUT = 5  # seconds until we terminate the program
+    TIMEOUT = 10  # seconds until we terminate the program
     PYTHON = 'python'
     SCRIPT = 'mnemoniccli.py'
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
