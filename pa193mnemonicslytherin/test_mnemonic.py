@@ -482,7 +482,8 @@ class TestMnemonic(TestCase):
 
     def test___init___invalid_encoding(self):
         """Input string isn't UTF-8 encoded."""
-        mnemonic_non_utf8 = "mn3\n\udcd6ic mn3\n\udcd6ic mn3\n\udcd6ic mn3\n\udcd6ic mn3\n\udcd6ic mn3\n\udcd6ic mn3\n\udcd6ic mn3\n\udcd6ic mn3\n\udcd6ic mn3\n\udcd6ic mn3\n\udcd6ic mn3\n\udcd6ic" 
+        words = ["mn3\n\udcd6"] * 12
+        mnemonic_non_utf8 = ' '.join(words)
         with self.assertRaises(UnicodeError):
             Mnemonic(mnemonic_non_utf8)
 
