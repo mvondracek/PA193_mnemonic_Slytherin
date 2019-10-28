@@ -25,3 +25,11 @@ For development purposes, install the package and CLI tool using
 `pip install -e` in the root package folder. Please see
 development guidelines in [CONTRIBUTING.md](/CONTRIBUTING.md).
 
+## FUZZING
+
+Before you start fuzzing install the package and also radamsa.
+
+~~~sh
+cd fuzz ; ./install.sh
+~~~
+
