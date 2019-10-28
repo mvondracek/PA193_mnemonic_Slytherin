@@ -263,7 +263,12 @@ def action_generate(config: Config) -> ExitCode:
         logger.critical(str(e))
         print(str(e), file=sys.stderr)
         return ExitCode.EX_DATAERR
-    mnemonic, seed = generate(entropy, config.password)
+    try:
+        mnemonic, seed = generate(entropy, config.password)
+    except UnicodeError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return ExitCode.EX_DATAERR
     with open(config.mnemonic_filepath, 'w') as file:
         file.write(mnemonic)
     logger.info('Mnemonic written to {}.'.format(config.mnemonic_filepath))
@@ -295,7 +300,12 @@ def action_recover(config: Config) -> ExitCode:
         logger.critical(str(e))
         print(str(e), file=sys.stderr)
         return ExitCode.EX_DATAERR
-    entropy, seed = recover(mnemonic, config.password)
+    try:
+        entropy, seed = recover(mnemonic, config.password)
+    except UnicodeError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return ExitCode.EX_DATAERR
     with open(config.entropy_filepath, config.format.write_mode) as file:
         if config.format is Config.Format.TEXT_HEXADECIMAL:
             entropy = str(hexlify(entropy), 'ascii')
@@ -354,7 +364,12 @@ def action_verify(config: Config) -> ExitCode:
         logger.critical(str(e))
         print(str(e), file=sys.stderr)
         return ExitCode.EX_DATAERR
-    match = verify(mnemonic, seed, config.password)
+    try:
+        match = verify(mnemonic, seed, config.password)
+    except UnicodeError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return ExitCode.EX_DATAERR
     if not match:
         msg = 'Seeds do not match.'
         logger.info(msg)
