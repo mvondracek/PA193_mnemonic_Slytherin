@@ -16,6 +16,7 @@
 ## Install & Uninstall
 
 Install the package from its root folder, where `setup.py` is.
+
 ~~~sh
 pip install .
 ~~~
@@ -25,6 +26,7 @@ pip uninstall pa193mnemonicslytherin
 ~~~
 
 ## Usage
+
 Please see built-in help by calling `mnemoniccli --help`.
 
 ## Development
