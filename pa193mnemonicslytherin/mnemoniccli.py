@@ -253,7 +253,7 @@ def action_generate(config: Config) -> ExitCode:
     if config.format is Config.Format.TEXT_HEXADECIMAL:
         try:
             entropy = unhexlify(entropy)  # type: bytes
-        except Error, ValueError as e:
+        except (Error, ValueError) as e:
             logger.critical(str(e))
             print(str(e), file=sys.stderr)
             return ExitCode.EX_DATAERR
@@ -344,7 +344,7 @@ def action_verify(config: Config) -> ExitCode:
     if config.format is Config.Format.TEXT_HEXADECIMAL:
         try:
             seed = unhexlify(seed)  # type: bytes
-        except Error, ValueError as e:
+        except (Error, ValueError) as e:
             logger.critical(str(e))
             print(str(e), file=sys.stderr)
             return ExitCode.EX_DATAERR
