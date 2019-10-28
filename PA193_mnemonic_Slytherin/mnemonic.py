@@ -69,6 +69,7 @@ class _DictionaryAccess:
         :raises FileNotFoundError: on missing file
         :raises PermissionError: If dictionary could not be retrieved due to denied permission.  # TODO test this
         :raises ValueError: on invalid dictionary
+        :raises UnicodeError: If dictionary contains invalid unicode sequences.  # TODO test this
         :rtype: Tuple[List[str], Dict[str, int]]
         :return: List and dictionary of words
         """
@@ -92,9 +93,10 @@ class _DictionaryAccess:
         with closing(dictionary) as f:
             for i in range(2048):
                 try:
-                    line = next(f).strip()
+                    line_bytes = next(f)  # raises StopIteration, caught below
                 except StopIteration:
                     raise ValueError('Cannot instantiate dictionary')
+                line = line_bytes.decode().strip()  # `line_bytes.decode()` can raise UnicodeError, propagated
                 if len(line) > 16 or len(line.split()) != 1:
                     raise ValueError('Cannot instantiate dictionary')
                 self._dict_list.append(line)
