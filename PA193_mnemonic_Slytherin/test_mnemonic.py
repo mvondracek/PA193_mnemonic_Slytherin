@@ -185,6 +185,7 @@ VALID_PASSWORD_TREZOR = TREZOR_PASSWORD
 def extract_checksum(mnemonic_phrase: str, dictionary_name: str = ENGLISH_DICTIONARY_NAME) -> int:
     """Extract checksum based on words from the mnemonic phrase and given dictionary.
     :raises FileNotFoundError: If dictionary file with given `dictionary_name` could not be found.
+    :raises PermissionError: If dictionary could not be retrieved due to denied permission.  # TODO test this
     :raises ValueError: Cannot instantiate dictionary  # TODO more descriptive message 1)
     :raises ValueError: Cannot instantiate dictionary  # TODO more descriptive message 2)
     :raises TypeError: `mnemonic_phrase` is not instance of `str`.
