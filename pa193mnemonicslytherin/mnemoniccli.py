@@ -15,7 +15,7 @@ import logging
 import sys
 import typing
 import warnings
-from binascii import unhexlify, hexlify
+from binascii import unhexlify, hexlify, Error
 from enum import Enum, unique
 from pprint import saferepr
 from typing import Sequence
@@ -247,7 +247,12 @@ def action_generate(config: Config) -> ExitCode:
         print(str(e), file=sys.stderr)
         return ExitCode.EX_NOINPUT
     if config.format is Config.Format.TEXT_HEXADECIMAL:
-        entropy = unhexlify(entropy)  # type: bytes
+        try:
+            entropy = unhexlify(entropy)  # type: bytes
+        except Error as e:
+            logger.critical(str(e))
+            print(str(e),file=sys.stderr)
+            return ExitCode.EX_DATAERR
     try:
         entropy = Entropy(entropy)
     except ValueError as e:
@@ -270,12 +275,16 @@ def action_generate(config: Config) -> ExitCode:
 def action_recover(config: Config) -> ExitCode:
     # TODO Check file size before reading?
     try:
-        with open(config.mnemonic_filepath, 'r') as file:
+        with open(config.mnemonic_filepath, 'r', encoding='utf-8') as file:
             mnemonic = file.read()  # type: str
     except FileNotFoundError as e:
         logger.critical(str(e))
         print(str(e), file=sys.stderr)
         return ExitCode.EX_NOINPUT
+    except UnicodeError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return ExitCode.EX_DATAERR
     try:
         mnemonic = Mnemonic(mnemonic)
     except ValueError as e:
@@ -300,12 +309,16 @@ def action_recover(config: Config) -> ExitCode:
 def action_verify(config: Config) -> ExitCode:
     # TODO Check file size before reading?
     try:
-        with open(config.mnemonic_filepath, 'r') as file:
+        with open(config.mnemonic_filepath, 'r', encoding='utf-8') as file:
             mnemonic = file.read()  # type: str
     except FileNotFoundError as e:
         logger.critical(str(e))
         print(str(e), file=sys.stderr)
         return ExitCode.EX_NOINPUT
+    except UnicodeError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return ExitCode.EX_DATAERR
     try:
         mnemonic = Mnemonic(mnemonic)
     except ValueError as e:
@@ -321,7 +334,12 @@ def action_verify(config: Config) -> ExitCode:
         print(str(e), file=sys.stderr)
         return ExitCode.EX_NOINPUT
     if config.format is Config.Format.TEXT_HEXADECIMAL:
-        seed = unhexlify(seed)  # type: bytes
+        try:
+            seed = unhexlify(seed)  # type: bytes
+        except Error as e:
+            logger.critical(str(e))
+            print(str(e), file=sys.stderr)
+            return ExitCode.EX_DATAERR
     try:
         seed = Seed(seed)
     except ValueError as e:
