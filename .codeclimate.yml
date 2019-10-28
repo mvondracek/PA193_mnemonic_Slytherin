@@ -14,6 +14,6 @@ plugins:
     enabled: true
     config:
       tests_patterns:
-        - PA193_mnemonic_Slytherin/test_*
+        - pa193mnemonicslytherin/test_*
       # Possible values are: info, minor, major (default), critical, blocker
       minimum_severity: major

@@ -23,7 +23,7 @@ def readme():
 
 
 setup(
-    name='PA193_mnemonic_Slytherin',
+    name='pa193mnemonicslytherin',
     version='0.1.0',
     description='BIP39 Mnemonic Phrase Generator and Verifier',
     long_description=readme(),
@@ -34,7 +34,10 @@ setup(
     author=__author__,
 
     python_requires='>=3.5, <4',
-    packages=['PA193_mnemonic_Slytherin'],
+    packages=['pa193mnemonicslytherin'],
+    package_data={
+        'pa193mnemonicslytherin': ['*.lst'],
+    },
     tests_require=[
         'nose',
         'coverage',
@@ -42,7 +45,7 @@ setup(
     test_suite='nose.collector',
     entry_points={
         'console_scripts': [
-            'mnemoniccli = PA193_mnemonic_Slytherin.mnemoniccli:cli_entry_point',
+            'mnemoniccli = pa193mnemonicslytherin.mnemoniccli:cli_entry_point',
         ]
     },
     include_package_data=True,

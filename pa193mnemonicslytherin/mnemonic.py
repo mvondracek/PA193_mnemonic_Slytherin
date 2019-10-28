@@ -11,19 +11,21 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 """
 import hmac
 import logging
-import os
+from contextlib import closing
 from copy import deepcopy
 from hashlib import sha256, sha512
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, BinaryIO
 from typing import Optional
 from unicodedata import normalize
+
+import pkg_resources
 
 __author__ = 'Team Slytherin: @sobuch, @lsolodkova, @mvondracek.'
 
 logger = logging.getLogger(__name__)
 
 
-ENGLISH_DICTIONARY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'english.txt')
+ENGLISH_DICTIONARY_NAME = 'english.lst'
 PBKDF2_ROUNDS = 2048
 SEED_LEN = 64
 MAX_SEED_PASSWORD_LENGTH = 256
@@ -60,27 +62,41 @@ class _DictionaryAccess:
     """Abstract class for classes requiring dictionary access
     """
 
-    def __init__(self, file_path: str = ENGLISH_DICTIONARY_PATH):
+    def __init__(self, dictionary_name: str = ENGLISH_DICTIONARY_NAME):
         """Load the dictionary.
         Currently uses 1 default dictionary with English words.
         # TODO Should we support multiple dictionaries for various languages?
-        :raises FileNotFoundError: on missing file
+        :raises FileNotFoundError: If dictionary file with given `dictionary_name` could not be found.
+        :raises PermissionError: If dictionary could not be retrieved due to denied permission.  # TODO test this
         :raises ValueError: on invalid dictionary
+        :raises UnicodeError: If dictionary contains invalid unicode sequences.  # TODO test this
         :rtype: Tuple[List[str], Dict[str, int]]
         :return: List and dictionary of words
         """
-        if not isinstance(file_path, str):
-            raise TypeError('argument `file_path` should be str, not {}'.format(
-                type(file_path).__name__))
+        if not isinstance(dictionary_name, str):
+            raise TypeError('argument `dictionary_name` should be str, not {}'.format(
+                type(dictionary_name).__name__))
 
         self._dict_list = []
         self._dict_dict = {}
-        with open(file_path, 'r') as f:
+
+        # > Normally, you should try to use resource_string or resource_stream,
+        # > unless you are interfacing with code you don't control (especially
+        # > C code) that absolutely must have a filename. The reason is that if
+        # > you ask for a filename, and your package is packed into a zipfile,
+        # > then the resource must be extracted to a temporary directory, which
+        # > is a more costly operation than just returning a string or
+        # > file-like object.
+        # > http://peak.telecommunity.com/DevCenter/PythonEggs#accessing-package-resources
+        # > from https://setuptools.readthedocs.io/en/latest/setuptools.html#accessing-data-files-at-runtime
+        dictionary = pkg_resources.resource_stream(__package__, dictionary_name)  # type: BinaryIO
+        with closing(dictionary) as f:
             for i in range(2048):
                 try:
-                    line = next(f).strip()
+                    line_bytes = next(f)  # raises StopIteration, caught below
                 except StopIteration:
                     raise ValueError('Cannot instantiate dictionary')
+                line = line_bytes.decode().strip()  # `line_bytes.decode()` can raise UnicodeError, propagated
                 if len(line) > 16 or len(line.split()) != 1:
                     raise ValueError('Cannot instantiate dictionary')
                 self._dict_list.append(line)
