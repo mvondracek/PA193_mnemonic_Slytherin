@@ -9,12 +9,16 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 
 2019
 """
-import os
+import io
 from binascii import unhexlify
-from tempfile import TemporaryDirectory
+from contextlib import closing
+from typing import BinaryIO, List, Any
 from unittest import TestCase
+from unittest.mock import patch
 
-from PA193_mnemonic_Slytherin.mnemonic import Entropy, Mnemonic, Seed, _DictionaryAccess, ENGLISH_DICTIONARY_PATH
+import pkg_resources
+
+from PA193_mnemonic_Slytherin.mnemonic import Entropy, Mnemonic, Seed, _DictionaryAccess, ENGLISH_DICTIONARY_NAME
 from PA193_mnemonic_Slytherin.mnemonic import generate, recover, verify
 
 # Test vectors by Trezor. Organized as entropy, mnemonic, seed, xprv
@@ -178,27 +182,40 @@ VALID_SEED_HEX_TREZOR = TREZOR_TEST_VECTORS['english'][0][2]
 VALID_PASSWORD_TREZOR = TREZOR_PASSWORD
 
 
-def extract_checksum(mnemonic_phrase: str, dictionary_file_path: str = ENGLISH_DICTIONARY_PATH) -> int:
+def extract_checksum(mnemonic_phrase: str, dictionary_name: str = ENGLISH_DICTIONARY_NAME) -> int:
     """Extract checksum based on words from the mnemonic phrase and given dictionary.
     :raises ValueError: Cannot instantiate dictionary  # TODO more descriptive message 1)
     :raises ValueError: Cannot instantiate dictionary  # TODO more descriptive message 2)
     :raises TypeError: `mnemonic_phrase` is not instance of `str`.
     :raises ValueError: `mnemonic_phrase` has invalid number of words, expected one of (12, 15, 18, 21, 24).
     :raises ValueError: `mnemonic_phrase` contains word which is not in current dictionary.
+    :raises UnicodeError: If dictionary contains invalid unicode sequences.  # TODO test this
     """
-    if not isinstance(dictionary_file_path, str):
-        raise TypeError('argument `dictionary_file_path` should be str, not {}'.format(
-            type(dictionary_file_path).__name__))
+    if not isinstance(dictionary_name, str):
+        raise TypeError('argument `dictionary_name` should be str, not {}'.format(
+            type(dictionary_name).__name__))
 
     # region TODO copied from _DictionaryAccess.__init__
     _dict_list = []
     _dict_dict = {}
-    with open(dictionary_file_path, 'r') as f:
+
+    # > Normally, you should try to use resource_string or resource_stream,
+    # > unless you are interfacing with code you don't control (especially
+    # > C code) that absolutely must have a filename. The reason is that if
+    # > you ask for a filename, and your package is packed into a zipfile,
+    # > then the resource must be extracted to a temporary directory, which
+    # > is a more costly operation than just returning a string or
+    # > file-like object.
+    # > http://peak.telecommunity.com/DevCenter/PythonEggs#accessing-package-resources
+    # > from https://setuptools.readthedocs.io/en/latest/setuptools.html#accessing-data-files-at-runtime
+    dictionary = pkg_resources.resource_stream(__name__, dictionary_name)  # type: BinaryIO
+    with closing(dictionary) as f:
         for i in range(2048):
             try:
-                line = next(f).strip()
+                line_bytes = next(f)  # raises StopIteration, caught below
             except StopIteration:
                 raise ValueError('Cannot instantiate dictionary')
+            line = line_bytes.decode().strip()  # `line_bytes.decode()` can raise UnicodeError, propagated
             if len(line) > 16 or len(line.split()) != 1:
                 raise ValueError('Cannot instantiate dictionary')  # TODO more descriptive message 1)
             _dict_list.append(line)
@@ -275,46 +292,31 @@ class TestInternalTestHelpers(TestCase):
                                             r'current dictionary'):
                     extract_checksum(test_input)
 
-    def test_extract_checksum_invalid_dictionary_file_path(self):
-        for test_input in [
-            None,
-            123,
-            b'\xff',
-            [None]
-        ]:
-            with self.assertRaisesRegex(TypeError, 'argument `dictionary_file_path` should be str'):
+    def test_extract_checksum_invalid_dictionary_name(self):
+        for test_input in Test_DictionaryAccess.INVALID_DICTIONARY_NAMES:
+            with self.assertRaisesRegex(TypeError, 'argument `dictionary_name` should be str'):
                 # noinspection PyTypeChecker
                 extract_checksum(VALID_MNEMONIC_PHRASE_TREZOR, test_input)  # type: ignore
 
     def test_extract_checksum_invalid_dictionary_lines(self):
-        with TemporaryDirectory() as tmpdir:
-            for lines in [0, 1, 2, 2046, 2047, 2049, 2050, 2051]:
-                with open(os.path.join(tmpdir, '__dictionary_lines__.txt'), 'w') as f:
-                    for i in range(lines):
-                        f.write('word\n')
+        for lines in Test_DictionaryAccess.INVALID_DICTIONARY_LINE_COUNTS:
+            dictionary_mock = io.BytesIO(b'word\n' * lines)
+            with patch.object(pkg_resources, 'resource_stream', return_value=dictionary_mock):
                 with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
-                    extract_checksum(VALID_MNEMONIC_PHRASE_TREZOR, dictionary_file_path=f.name)
+                    extract_checksum(VALID_MNEMONIC_PHRASE_TREZOR)
 
     def test_extract_checksum_invalid_dictionary_words_on_line(self):
-        with TemporaryDirectory() as tmpdir:
-            with open(os.path.join(tmpdir, '__dictionary_words_on_line__.txt'), 'w') as f:
-                for i in range(2047):
-                    # 2047 because we will write last line `multiple words on single line` separately
-                    f.write('word_{}\n'.format(i))
-                f.write('multiple words on single line\n')
+        dictionary_mock = io.BytesIO(b'word\n' * 2047 + b'multiple words on single line\n')
+        with patch.object(pkg_resources, 'resource_stream', return_value=dictionary_mock):
             with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
-                extract_checksum(VALID_MNEMONIC_PHRASE_TREZOR, dictionary_file_path=f.name)
+                extract_checksum(VALID_MNEMONIC_PHRASE_TREZOR)
 
     def test_extract_checksum_invalid_dictionary_long_word(self):
-        with TemporaryDirectory() as tmpdir:
-            for word_lengths in [17, 18, 19]:
-                with open(os.path.join(tmpdir, '__dictionary_long_word__.txt'), 'w') as f:
-                    for i in range(2047):
-                        # 2047 because we will write last line `multiple words on single line` separately
-                        f.write('word_{}\n'.format(i))
-                    f.write('a' * word_lengths + '\n')
+        for word_length in [17, 18, 19]:
+            dictionary_mock = io.BytesIO(b'word\n' * 2047 + b'a' * word_length + b'\n')
+            with patch.object(pkg_resources, 'resource_stream', return_value=dictionary_mock):
                 with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
-                    extract_checksum(VALID_MNEMONIC_PHRASE_TREZOR, dictionary_file_path=f.name)
+                    extract_checksum(VALID_MNEMONIC_PHRASE_TREZOR)
 
 
 class TestPublicFunctions(TestCase):
@@ -602,43 +604,39 @@ class TestEntropy(TestCase):
 
 # noinspection PyPep8Naming
 class Test_DictionaryAccess(TestCase):
-    def test___init___invalid_file_path(self):
-        for test_input in [
-            None,
-            123,
-            b'\xff',
-            [None]
-        ]:
-            with self.assertRaisesRegex(TypeError, 'argument `file_path` should be str'):
+    INVALID_DICTIONARY_NAMES = [
+        None,
+        123,
+        b'\xff',
+        [None]
+    ]  # type: List[Any]
+    VALID_DICTIONARY_LINE_COUNT = 2048
+    INVALID_DICTIONARY_LINE_COUNTS = [0, 1, 2, 2046, 2047, 2049, 2050, 2051]  # type: List[int]
+
+    def test___init___invalid_dictionary_name(self):
+        for test_input in self.INVALID_DICTIONARY_NAMES:
+            with self.assertRaisesRegex(TypeError, 'argument `dictionary_name` should be str'):
                 # noinspection PyTypeChecker
                 _DictionaryAccess(test_input)  # type: ignore
 
     def test___init___invalid_dictionary_lines(self):
-        with TemporaryDirectory() as tmpdir:
-            for lines in [0, 1, 2, 2046, 2047, 2049, 2050, 2051]:
-                with open(os.path.join(tmpdir, '__dictionary_lines__.txt'), 'w') as f:
-                    for i in range(lines):
-                        f.write('word\n')
+        for lines in self.INVALID_DICTIONARY_LINE_COUNTS:
+            dictionary_mock = io.BytesIO(b'word\n' * lines)
+            with patch.object(pkg_resources, 'resource_stream', return_value=dictionary_mock):
                 with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
-                    _DictionaryAccess(f.name)
+                    _DictionaryAccess()
 
     def test___init___invalid_dictionary_words_on_line(self):
-        with TemporaryDirectory() as tmpdir:
-            with open(os.path.join(tmpdir, '__dictionary_words_on_line__.txt'), 'w') as f:
-                for i in range(2047):
-                    # 2047 because we will write last line `multiple words on single line` separately
-                    f.write('word_{}\n'.format(i))
-                f.write('multiple words on single line\n')
+        dictionary_mock = io.BytesIO(
+            b'word\n' * (self.VALID_DICTIONARY_LINE_COUNT - 1) + b'multiple words on single line\n')
+        with patch.object(pkg_resources, 'resource_stream', return_value=dictionary_mock):
             with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
-                _DictionaryAccess(f.name)
+                _DictionaryAccess()
 
     def test___init___invalid_dictionary_long_word(self):
-        with TemporaryDirectory() as tmpdir:
-            for word_lengths in [17, 18, 19]:
-                with open(os.path.join(tmpdir, '__dictionary_long_word__.txt'), 'w') as f:
-                    for i in range(2047):
-                        # 2047 because we will write last line `multiple words on single line` separately
-                        f.write('word_{}\n'.format(i))
-                    f.write('a' * word_lengths + '\n')
+        for word_length in [17, 18, 19]:
+            dictionary_mock = io.BytesIO(
+                b'word\n' * (self.VALID_DICTIONARY_LINE_COUNT - 1) + b'a' * word_length + b'\n')
+            with patch.object(pkg_resources, 'resource_stream', return_value=dictionary_mock):
                 with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
-                    _DictionaryAccess(f.name)
+                    _DictionaryAccess()
