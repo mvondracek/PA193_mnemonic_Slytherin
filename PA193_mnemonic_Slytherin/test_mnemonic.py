@@ -617,6 +617,7 @@ class Test_DictionaryAccess(TestCase):
     ]  # type: List[Any]
     VALID_DICTIONARY_LINE_COUNT = 2048
     INVALID_DICTIONARY_LINE_COUNTS = [0, 1, 2, 2046, 2047, 2049, 2050, 2051]  # type: List[int]
+    INVALID_DICTIONARY_WORD_LENGTHS = [17, 18, 19]  # type: List[int]
 
     def test___init___invalid_dictionary_name(self):
         for test_input in self.INVALID_DICTIONARY_NAMES:
@@ -643,7 +644,7 @@ class Test_DictionaryAccess(TestCase):
                 _DictionaryAccess()
 
     def test___init___invalid_dictionary_long_word(self):
-        for word_length in [17, 18, 19]:
+        for word_length in self.INVALID_DICTIONARY_WORD_LENGTHS:
             dictionary_mock = io.BytesIO(
                 b'word\n' * (self.VALID_DICTIONARY_LINE_COUNT - 1) + b'a' * word_length + b'\n')
             with patch.object(pkg_resources, 'resource_stream', return_value=dictionary_mock):
