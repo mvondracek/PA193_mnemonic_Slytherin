@@ -201,10 +201,15 @@ class Mnemonic(str, _DictionaryAccess):
 
     def __init__(self, mnemonic: str):
         """Convert mnemonic phrase to entropy using dictionary to ensure its validity.
+        :raises TypeError: on invalid parameter type
         :raises ValueError: on invalid parameters
+        :raises UnicodeError: if mnemonic isn't UTF-8 string
         """
         if not isinstance(mnemonic, str):
             raise TypeError('argument `mnemonic` should be str, not {}'.format(type(mnemonic).__name__))
+
+        mnemonic.encode('utf-8')  # to check for valid UTF-8
+        mnemonic = normalize('NFKD', mnemonic)
         super().__init__()
         _DictionaryAccess.__init__(self)
 
@@ -244,6 +249,7 @@ class Mnemonic(str, _DictionaryAccess):
         (empty string) by default.
         :raises ValueError: If `seed_password` is longer than 256 characters.
         :raises ValueError: on invalid parameters
+        :raises UnicodeError: if seed_password isn't a valid UTF-8 string
         :rtype: Seed
         :return: Seed
         """
@@ -253,10 +259,10 @@ class Mnemonic(str, _DictionaryAccess):
         if len(seed_password) > MAX_SEED_PASSWORD_LENGTH:
             raise ValueError('Password is too long')
         # the encoding of both inputs should be UTF-8 NFKD
-        mnemonic = self.encode()  # encoding string into bytes, UTF-8 by default
+        mnemonic = self.encode('utf-8')
         seed_password = normalize('NFKD', seed_password)
         passphrase = "mnemonic" + seed_password
-        passphrase = passphrase.encode()
+        passphrase = passphrase.encode('utf-8')
         return Seed(_pbkdf2_sha512(mnemonic, passphrase, PBKDF2_ROUNDS))
 
     def to_entropy(self) -> Entropy:
@@ -273,6 +279,7 @@ def generate(entropy: Entropy, seed_password: str = '') -> Tuple[Mnemonic, Seed]
     (empty string) by default.
     :raises ValueError: on invalid parameters
     :raises ValueError: If `seed_password` is longer than 256 characters.
+    :raises UnicodeError: if `seed_password` isn't a valid UTF-8 string
     :rtype: Tuple[Mnemonic, Seed]
     :return: Two item tuple where first is mnemonic phrase and second is seed.
     """
@@ -292,6 +299,7 @@ def recover(mnemonic: Mnemonic, seed_password: str = '') -> Tuple[Entropy, Seed]
     (empty string) by default.
     :raises ValueError: on invalid parameters
     :raises ValueError: If `seed_password` is longer than 256 characters.
+    :raises UnicodeError: if `seed_password` isn't a valid UTF-8 string
     :rtype: Tuple[Entropy, Seed]
     :return: Two item tuple where first is initial entropy and second is seed.
     """
@@ -311,6 +319,7 @@ def verify(mnemonic: Mnemonic, expected_seed: Seed, seed_password: str = '') -> 
     (empty string) by default.
     :raises ValueError: on invalid parameters
     :raises ValueError: If `seed_password` is longer than 256 characters.
+    :raises UnicodeError: if `seed_password` isn't a valid UTF-8 string
     :rtype: bool
     :return: True if provided phrase generates expected seed, False otherwise.
     """
