@@ -20,9 +20,9 @@ from enum import Enum, unique
 from pprint import saferepr
 from typing import Sequence
 
-from PA193_mnemonic_Slytherin import Entropy, Mnemonic, Seed
-from PA193_mnemonic_Slytherin import generate, recover, verify
-from PA193_mnemonic_Slytherin.mnemonic import MAX_SEED_PASSWORD_LENGTH
+from pa193mnemonicslytherin import Entropy, Mnemonic, Seed
+from pa193mnemonicslytherin import generate, recover, verify
+from pa193mnemonicslytherin.mnemonic import MAX_SEED_PASSWORD_LENGTH
 
 __version__ = '0.1.0'
 __author__ = 'Team Slytherin: @sobuch, @lsolodkova, @mvondracek.'
@@ -196,16 +196,16 @@ class Config(object):
         # basic input file path check
         if parsed_args.verify:
             if not parsed_args.mnemonic:
-                parser.error('argument mnemonic is required with action `{}`'.format(parsed_args.entropy, action_name))
+                parser.error('argument mnemonic is required with action `{}`'.format(action_name))
             if not parsed_args.seed:
-                parser.error('argument seed is required with action `{}`'.format(parsed_args.entropy, action_name))
+                parser.error('argument seed is required with action `{}`'.format(action_name))
         else:  # generate or recover
             if not parsed_args.entropy:
-                parser.error('argument entropy is required with action `{}`'.format(parsed_args.entropy, action_name))
+                parser.error('argument entropy is required with action `{}`'.format(action_name))
             if not parsed_args.mnemonic:
-                parser.error('argument mnemonic is required with action `{}`'.format(parsed_args.entropy, action_name))
+                parser.error('argument mnemonic is required with action `{}`'.format(action_name))
             if not parsed_args.seed:
-                parser.error('argument seed is required with action `{}`'.format(parsed_args.entropy, action_name))
+                parser.error('argument seed is required with action `{}`'.format(action_name))
 
         config = cls(
             # name to value conversion as noted in `self.init_parser`

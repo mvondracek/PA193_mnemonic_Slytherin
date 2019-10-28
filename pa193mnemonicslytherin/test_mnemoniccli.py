@@ -18,9 +18,9 @@ from io import StringIO
 from tempfile import TemporaryDirectory
 from typing import Optional, List, Tuple, Union
 
-from PA193_mnemonic_Slytherin.mnemonic import MAX_SEED_PASSWORD_LENGTH, SEED_LEN
-from PA193_mnemonic_Slytherin.mnemoniccli import ExitCode, cli_entry_point, Config
-from PA193_mnemonic_Slytherin.test_mnemonic import TREZOR_TEST_VECTORS, TREZOR_PASSWORD, \
+from pa193mnemonicslytherin.mnemonic import MAX_SEED_PASSWORD_LENGTH, SEED_LEN
+from pa193mnemonicslytherin.mnemoniccli import ExitCode, cli_entry_point, Config
+from pa193mnemonicslytherin.test_mnemonic import TREZOR_TEST_VECTORS, TREZOR_PASSWORD, \
     VALID_SEED_HEX_TREZOR, VALID_MNEMONIC_PHRASE_TREZOR
 
 

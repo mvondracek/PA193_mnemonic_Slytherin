@@ -18,8 +18,8 @@ from unittest.mock import patch
 
 import pkg_resources
 
-from PA193_mnemonic_Slytherin.mnemonic import Entropy, Mnemonic, Seed, _DictionaryAccess, ENGLISH_DICTIONARY_NAME
-from PA193_mnemonic_Slytherin.mnemonic import generate, recover, verify
+from pa193mnemonicslytherin.mnemonic import Entropy, Mnemonic, Seed, _DictionaryAccess, ENGLISH_DICTIONARY_NAME
+from pa193mnemonicslytherin.mnemonic import generate, recover, verify
 
 # Test vectors by Trezor. Organized as entropy, mnemonic, seed, xprv
 # https://github.com/trezor/python-mnemonic/blob/master/vectors.json

@@ -13,15 +13,23 @@
 [@lsolodkova](https://github.com/lsolodkova),
 [@mvondracek](https://github.com/mvondracek).
 
-## Install
+## Install & Uninstall
+
+Install the package from its root folder, where `setup.py` is.
+~~~sh
+pip install .
+~~~
 
 ~~~sh
-python setup.py install
+pip uninstall pa193mnemonicslytherin
 ~~~
+
+## Usage
+Please see built-in help by calling `mnemoniccli --help`.
 
 ## Development
 
 For development purposes, install the package and CLI tool using
-`pip install -e` in the root package folder. Please see
+`pip install -e .` in the root package folder. Please see
 development guidelines in [CONTRIBUTING.md](/CONTRIBUTING.md).
 
