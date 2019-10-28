@@ -246,12 +246,16 @@ def action_generate(config: Config) -> ExitCode:
         logger.critical(str(e))
         print(str(e), file=sys.stderr)
         return ExitCode.EX_NOINPUT
+    except UnicodeError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return ExitCode.EX_DATAERR
     if config.format is Config.Format.TEXT_HEXADECIMAL:
         try:
             entropy = unhexlify(entropy)  # type: bytes
-        except Error as e:
+        except Error, ValueError as e:
             logger.critical(str(e))
-            print(str(e),file=sys.stderr)
+            print(str(e), file=sys.stderr)
             return ExitCode.EX_DATAERR
     try:
         entropy = Entropy(entropy)
@@ -333,10 +337,14 @@ def action_verify(config: Config) -> ExitCode:
         logger.critical(str(e))
         print(str(e), file=sys.stderr)
         return ExitCode.EX_NOINPUT
+    except UnicodeError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return ExitCode.EX_DATAERR
     if config.format is Config.Format.TEXT_HEXADECIMAL:
         try:
             seed = unhexlify(seed)  # type: bytes
-        except Error as e:
+        except Error, ValueError as e:
             logger.critical(str(e))
             print(str(e), file=sys.stderr)
             return ExitCode.EX_DATAERR
