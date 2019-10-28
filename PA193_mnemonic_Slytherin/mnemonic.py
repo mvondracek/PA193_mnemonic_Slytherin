@@ -66,7 +66,7 @@ class _DictionaryAccess:
         """Load the dictionary.
         Currently uses 1 default dictionary with English words.
         # TODO Should we support multiple dictionaries for various languages?
-        :raises FileNotFoundError: on missing file
+        :raises FileNotFoundError: If dictionary file with given `dictionary_name` could not be found.
         :raises PermissionError: If dictionary could not be retrieved due to denied permission.  # TODO test this
         :raises ValueError: on invalid dictionary
         :raises UnicodeError: If dictionary contains invalid unicode sequences.  # TODO test this

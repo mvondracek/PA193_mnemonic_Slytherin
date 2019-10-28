@@ -184,6 +184,7 @@ VALID_PASSWORD_TREZOR = TREZOR_PASSWORD
 
 def extract_checksum(mnemonic_phrase: str, dictionary_name: str = ENGLISH_DICTIONARY_NAME) -> int:
     """Extract checksum based on words from the mnemonic phrase and given dictionary.
+    :raises FileNotFoundError: If dictionary file with given `dictionary_name` could not be found.
     :raises ValueError: Cannot instantiate dictionary  # TODO more descriptive message 1)
     :raises ValueError: Cannot instantiate dictionary  # TODO more descriptive message 2)
     :raises TypeError: `mnemonic_phrase` is not instance of `str`.
@@ -297,6 +298,10 @@ class TestInternalTestHelpers(TestCase):
             with self.assertRaisesRegex(TypeError, 'argument `dictionary_name` should be str'):
                 # noinspection PyTypeChecker
                 extract_checksum(VALID_MNEMONIC_PHRASE_TREZOR, test_input)  # type: ignore
+
+    def test_extract_checksum_invalid_dictionary_name_unsupported(self):
+        with self.assertRaises(FileNotFoundError):
+            extract_checksum(VALID_MNEMONIC_PHRASE_TREZOR, 'this_is_not_a_name_of_any_supported_dictionary')
 
     def test_extract_checksum_invalid_dictionary_lines(self):
         for lines in Test_DictionaryAccess.INVALID_DICTIONARY_LINE_COUNTS:
@@ -618,6 +623,10 @@ class Test_DictionaryAccess(TestCase):
             with self.assertRaisesRegex(TypeError, 'argument `dictionary_name` should be str'):
                 # noinspection PyTypeChecker
                 _DictionaryAccess(test_input)  # type: ignore
+
+    def test___init___invalid_dictionary_name_unsupported(self):
+        with self.assertRaises(FileNotFoundError):
+            _DictionaryAccess('this_is_not_a_name_of_any_supported_dictionary')
 
     def test___init___invalid_dictionary_lines(self):
         for lines in self.INVALID_DICTIONARY_LINE_COUNTS:
