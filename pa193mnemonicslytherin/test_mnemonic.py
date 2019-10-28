@@ -420,6 +420,7 @@ class TestPublicFunctions(TestCase):
         with self.assertRaises(UnicodeError):
             verify(VALID_MNEMONIC_TREZOR, VALID_SEED_TREZOR, non_utf8)
 
+
 # TODO add more tests (different from Trezor vector)
 class TestMnemonic(TestCase):
     """Tests Mnemonic"""
@@ -479,6 +480,12 @@ class TestMnemonic(TestCase):
         with self.assertRaises(ValueError):
             Mnemonic('a' * 1024 * 1024)  # 1 MB
 
+    def test___init___invalid_encoding(self):
+        """Input string isn't UTF-8 encoded."""
+        mnemonic_non_utf8 = "mn3\n\udcd6ic mn3\n\udcd6ic mn3\n\udcd6ic mn3\n\udcd6ic mn3\n\udcd6ic mn3\n\udcd6ic mn3\n\udcd6ic mn3\n\udcd6ic mn3\n\udcd6ic mn3\n\udcd6ic mn3\n\udcd6ic mn3\n\udcd6ic" 
+        with self.assertRaises(UnicodeError):
+            Mnemonic(mnemonic_non_utf8)
+
     def test_to_seed(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             with self.subTest(mnemonic=test_vector[1]):
@@ -497,6 +504,11 @@ class TestMnemonic(TestCase):
         password = 'a' * 1024 * 1024  # 1 MB
         with self.assertRaises(ValueError):
             VALID_MNEMONIC_TREZOR.to_seed(password)
+
+    def test_to_seed_password_invalid_encoding(self):
+        password_non_utf8 = "icpa\u202e\U000e0ec1\udcaassword1"
+        with self.assertRaises(UnicodeError):
+            VALID_MNEMONIC_TREZOR.to_seed(password_non_utf8)
 
     def test_to_entropy(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
