@@ -9,6 +9,7 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 
 2019
 """
+import doctest
 import io
 from binascii import unhexlify
 from contextlib import closing
@@ -18,6 +19,7 @@ from unittest.mock import patch
 
 import pkg_resources
 
+import pa193mnemonicslytherin.mnemonic
 from pa193mnemonicslytherin.mnemonic import Entropy, Mnemonic, Seed, _DictionaryAccess, ENGLISH_DICTIONARY_NAME
 from pa193mnemonicslytherin.mnemonic import generate, recover, verify
 
@@ -525,14 +527,14 @@ class TestSeed(TestCase):
 
     def test___init___invalid_argument(self):
         # noinspection SpellCheckingInspection
-        test_cases_type = [None, '', '1234567890abcd', 'NonHexaString_!?', [b'']]
+        test_cases_type = [None, '', '1234567890abcd', 'NonHexaString_!?', 0, 123, [b'']]
         for test in test_cases_type:
             with self.assertRaises(TypeError):
                 # noinspection PyTypeChecker
                 Seed(test)  # type: ignore
 
         test_cases_value = [b'', b'tooShort', b'63bytesLongSoExactlyOneByteShortOfBeingValidSoCloseYetSoFarSAD!',
-                            b'soLongItHurtsHurDurBlaBlaButAnywayThisShouldFail123456789101112131415', 0, 123,
+                            b'soLongItHurtsHurDurBlaBlaButAnywayThisShouldFail123456789101112131415',
                             unhexlify(TREZOR_TEST_VECTORS['english'][0][2]) + b'almost_ok']
         for test in test_cases_value:
             with self.assertRaises(ValueError):
@@ -564,14 +566,14 @@ class TestEntropy(TestCase):
 
     def test___init___invalid_argument(self):
         # noinspection SpellCheckingInspection
-        test_cases_type = [None, '', '1234567890abcd', 'NonHexaString_!?', [b'']]
+        test_cases_type = [None, '', '1234567890abcd', 'NonHexaString_!?', 0, 123, [b'']]
         for test in test_cases_type:
             with self.assertRaises(TypeError):
                 # noinspection PyTypeChecker
                 Entropy(test)  # type: ignore
 
         test_cases_value = [b'', b'tooShort', b'Well26BytesIsNotGonnaCutIT', b'Not15neitherLol',
-                            b'soLongItHurtsHurDurBlaBlaButAnywayThisShouldFail123456789101112131415', 0, 123,
+                            b'soLongItHurtsHurDurBlaBlaButAnywayThisShouldFail123456789101112131415',
                             unhexlify(TREZOR_TEST_VECTORS['english'][0][2]) + b'almost_ok']
         for test in test_cases_value:
             with self.assertRaises(ValueError):
@@ -651,3 +653,9 @@ class Test_DictionaryAccess(TestCase):
             with patch.object(pkg_resources, 'resource_stream', return_value=dictionary_mock):
                 with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
                     _DictionaryAccess()
+
+
+# noinspection PyUnusedLocal
+def load_tests(loader, tests, ignore):
+    tests.addTests(doctest.DocTestSuite(pa193mnemonicslytherin.mnemonic))
+    return tests

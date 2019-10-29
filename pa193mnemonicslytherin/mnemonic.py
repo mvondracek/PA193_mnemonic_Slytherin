@@ -1,13 +1,29 @@
-"""
-BIP39 Mnemonic Phrase Generator and Verifier
+#
+# BIP39 Mnemonic Phrase Generator and Verifier
+#
+# Secure Coding Principles and Practices (PA193)  https://is.muni.cz/course/fi/autumn2019/PA193?lang=en
+# Faculty of Informatics (FI)                     https://www.fi.muni.cz/index.html.en
+# Masaryk University (MU)                         https://www.muni.cz/en
+#
+# Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
+#
+# 2019
+r"""
 
-Secure Coding Principles and Practices (PA193)  https://is.muni.cz/course/fi/autumn2019/PA193?lang=en
-Faculty of Informatics (FI)                     https://www.fi.muni.cz/index.html.en
-Masaryk University (MU)                         https://www.muni.cz/en
+:Example:
 
-Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
+>>> from pa193mnemonicslytherin import Entropy, Mnemonic, Seed, generate, recover, verify
+>>> password = 'secret123'
+>>> entropy = Entropy(b'\x41' * 16)
+>>> mnemonic, seed = generate(entropy, password)
+>>>
+>>> entropy_recovered, seed_recovered = recover(mnemonic, password)
+>>> entropy_recovered == entropy and seed_recovered == seed
+True
+>>>
+>>> verify(mnemonic, seed, password)
+True
 
-2019
 """
 import hmac
 import logging
@@ -23,7 +39,6 @@ import pkg_resources
 __author__ = 'Team Slytherin: @sobuch, @lsolodkova, @mvondracek.'
 
 logger = logging.getLogger(__name__)
-
 
 ENGLISH_DICTIONARY_NAME = 'english.lst'
 PBKDF2_ROUNDS = 2048
@@ -106,21 +121,54 @@ class _DictionaryAccess:
 
 
 class Seed(bytes):
-    """Class for seed representation.
-    """
+    """Seed representation, validation, and comparison."""
 
-    def __init__(self, seed: bytes):
-        """Check whether provided bytes represent a valid seed.
-        :raises ValueError: on invalid parameters
+    def __init__(self, seed: bytes) -> None:
+        # noinspection PyTypeChecker
+        """Initialize Seed representing bytes of seed.
+
+        Performs basic validation.
+
+        :param bytes seed: Seed represented as bytes.
+        :raises ValueError: on invalid parameter value
+        :raises TypeError: on invalid parameter type
+
+        :Example:
+
+        >>> from pa193mnemonicslytherin import Seed
+        >>> Seed(b'\x41' * 64)
+        b'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+        >>> # examples of invalid use
+        >>> Seed(b'\x41')
+        Traceback (most recent call last):
+        ValueError: length of argument `seed` should be 64, not 1
+        >>> Seed(123)
+        Traceback (most recent call last):
+        TypeError: argument `seed` should be bytes, not int
+
         """
-        if not isinstance(seed, bytes) or len(seed) != SEED_LEN:
-            raise ValueError('Cannot instantiate seed')
+        if not isinstance(seed, bytes):
+            raise TypeError('argument `seed` should be bytes, not {}'.format(type(seed).__name__))
+        if len(seed) != SEED_LEN:
+            raise ValueError('length of argument `seed` should be {}, not {}'.format(SEED_LEN, len(seed)))
         super().__init__()
 
     def __eq__(self, other: object) -> bool:
         """Compare seeds in constant time to prevent timing attacks.
         :rtype: bool
-        :return: True if seeds are the same, False otherwise.
+        :return: True if seeds are equal, False otherwise.
+
+        :Example:
+
+        >>> from pa193mnemonicslytherin import Seed
+        >>> s_A_1 = Seed(b'\x41' * 64)
+        >>> s_A_2 = Seed(b'\x41' * 64)
+        >>> s_b = Seed(b'\x62' * 64)
+        >>> s_A_1 == s_A_2
+        True
+        >>> s_A_1 == s_b
+        False
+
         """
         result = 0
         if not isinstance(other, Seed):
@@ -135,35 +183,81 @@ class Seed(bytes):
     def __ne__(self, other: object) -> bool:
         """Compare seeds in constant time to prevent timing attacks.
         :rtype: bool
-        :return: False if seeds are the same, True otherwise.
+        :return: True if seeds are not equal, False otherwise.
+
+        :Example:
+
+        >>> from pa193mnemonicslytherin import Seed
+        >>> s_A_1 = Seed(b'\x41' * 64)
+        >>> s_A_2 = Seed(b'\x41' * 64)
+        >>> s_b = Seed(b'\x62' * 64)
+        >>> s_A_1 != s_A_2
+        False
+        >>> s_A_1 != s_b
+        True
+
         """
         return not (self == other)
 
 
 class Entropy(bytes, _DictionaryAccess):
-    """Class for entropy representation.
-    """
+    """Entropy representation, validation, and transformation to Mnemonic."""
 
-    def __init__(self, entropy: bytes):
-        """Check whether provided bytes represent a valid entropy according to BIP39.
-        https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
+    def __init__(self, entropy: bytes) -> None:
+        # noinspection PyTypeChecker
+        """Initialize Entropy representing bytes of entropy.
 
-        > The mnemonic must encode entropy in a multiple of 32 bits. With more entropy security is
-        > improved but the sentence length increases. We refer to the initial entropy length as ENT.
-        > The allowed size of ENT is 128-256 bits.
-        > https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
-        :raises ValueError: on invalid parameters
+        Checks whether provided bytes represent a valid entropy according to
+        `BIP39 <https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki>`_.
+
+            The mnemonic must encode entropy in a multiple of 32 bits. With
+            more entropy security is improved but the sentence length
+            increases. We refer to the initial entropy length as ENT.
+            The allowed size of ENT is 128-256 bits.
+
+            `BIP39, Generating the mnemonic <https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic>`_
+
+        :param bytes entropy: Entropy represented as bytes.
+        :raises ValueError: on invalid parameter value
+        :raises TypeError: on invalid parameter type
+
+        :Example:
+
+        >>> from pa193mnemonicslytherin import Entropy
+        >>> Entropy(b'\x41' * 16)
+        b'AAAAAAAAAAAAAAAA'
+        >>> # examples of invalid use
+        >>> Entropy(b'\x41')
+        Traceback (most recent call last):
+        ValueError: length of argument `entropy` should be one of (16, 20, 24, 28, 32), not 1
+        >>> Entropy(123)
+        Traceback (most recent call last):
+        TypeError: argument `entropy` should be bytes, not int
+
         """
-        if not isinstance(entropy, bytes) or len(entropy) not in (16, 20, 24, 28, 32):
-            raise ValueError('Cannot instantiate entropy')
+        if not isinstance(entropy, bytes):
+            raise TypeError('argument `entropy` should be bytes, not {}'.format(type(entropy).__name__))
+        valid_entropy_lengths = (16, 20, 24, 28, 32)
+        if len(entropy) not in valid_entropy_lengths:
+            raise ValueError('length of argument `entropy` should be one of {}, not {}'.format(
+                valid_entropy_lengths, len(entropy)))
         super().__init__()
         _DictionaryAccess.__init__(self)
         self.__mnemonic = None  # type: Optional[Mnemonic]
 
     def checksum(self) -> int:
-        """Calculate checksum of this entropy based on its length
+        """Calculate checksum of this entropy based on its length.
+
         :rtype: int
         :return: checksum
+
+        :Example:
+
+        >>> from pa193mnemonicslytherin import Entropy
+        >>> entropy = Entropy(b'\x41' * 16)
+        >>> entropy.checksum()
+        9
+
         """
         entropy_hash = sha256(self).digest()
         assert len(self) % 4 == 0
@@ -172,13 +266,30 @@ class Entropy(bytes, _DictionaryAccess):
 
     def to_mnemonic(self) -> 'Mnemonic':
         """Convert entropy to mnemonic phrase using dictionary.
-        :rtype: Mnemonic
-        :return: Mnemonic phrase
 
-        > https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
-        'Checksum is computed using first ENT/32 bits of SHA256 hash. Concatenated bits are split
-        into groups of 11 bits, each encoding a number from 0-2047, serving as an index into a
-        wordlist.'
+        Converted Mnemonic instance is stored and calls to this method always
+        return its deep copy.
+
+            Checksum is computed using first ENT/32 bits of SHA256 hash.
+            Concatenated bits are split into groups of 11 bits, each encoding
+            a number from 0-2047, serving as an index into a wordlist.
+
+            `BIP39, Generating the mnemonic <https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic>`_
+
+        :rtype: Mnemonic
+        :return: Mnemonic
+
+        :Example:
+
+        >>> from pa193mnemonicslytherin import Entropy
+        >>> entropy = Entropy(b'\x41' * 16)
+        >>> entropy.to_mnemonic()
+        'donor anxiety expect little beef pass agree choice donor anxiety expect lobster'
+        >>> m_a = entropy.to_mnemonic()
+        >>> m_b = entropy.to_mnemonic()
+        >>> m_a == m_b and m_a is not m_b
+        True
+
         """
         if not self.__mnemonic:
             shift = len(self) // 4
@@ -196,12 +307,40 @@ class Entropy(bytes, _DictionaryAccess):
 
 
 class Mnemonic(str, _DictionaryAccess):
-    """Class for mnemonic representation.
+    """Mnemonic representation, validation, and transformation to Entropy
+    or Seed.
     """
 
     def __init__(self, mnemonic: str):
-        """Convert mnemonic phrase to entropy using dictionary to ensure its validity.
-        :raises ValueError: on invalid parameters
+        # noinspection PyTypeChecker
+        """Initialize Mnemonic representing bytes of mnemonic.
+
+        Converts mnemonic phrase to entropy using dictionary to ensure its
+        validity.
+
+        :param bytes mnemonic: Mnemonic represented as bytes.
+        :raises ValueError: on invalid parameter value
+        :raises TypeError: on invalid parameter type
+
+        :Example:
+
+        >>> from pa193mnemonicslytherin import Mnemonic
+        >>> Mnemonic('donor anxiety expect little beef pass agree choice donor anxiety expect lobster')
+        'donor anxiety expect little beef pass agree choice donor anxiety expect lobster'
+        >>> # examples of invalid use
+        >>> Mnemonic(123)
+        Traceback (most recent call last):
+        TypeError: argument `mnemonic` should be str, not int
+        >>> Mnemonic('donor')
+        Traceback (most recent call last):
+        ValueError: argument `mnemonic` has invalid number of words, 1 given, expected one of (12, 15, 18, 21, 24)
+        >>> Mnemonic('slytherin ' * 12)
+        Traceback (most recent call last):
+        ValueError: argument `mnemonic` contains word `slytherin` which is not in current dictionary
+        >>> Mnemonic('hello ' * 12)
+        Traceback (most recent call last):
+        ValueError: argument `mnemonic` includes checksum 6 different from computed 1
+
         """
         if not isinstance(mnemonic, str):
             raise TypeError('argument `mnemonic` should be str, not {}'.format(type(mnemonic).__name__))
@@ -218,8 +357,8 @@ class Mnemonic(str, _DictionaryAccess):
         try:
             indexes = [self._dict_dict[word] for word in words]
         except KeyError as e:
-            raise ValueError('argument `mnemonic` contains word {} which is not in current dictionary'
-                             .format(e.args[0]))
+            raise ValueError('argument `mnemonic` contains word `{}` which is not in current dictionary'
+                             .format(e.args[0])) from e
 
         # Concatenate indexes into single variable
         indexes_bin = sum([indexes[-i - 1] << i * 11 for i in reversed(range(n_words))])
@@ -239,19 +378,49 @@ class Mnemonic(str, _DictionaryAccess):
                              .format(checksum_included, checksum_computed))
 
     def to_seed(self, seed_password: str = '') -> Seed:
+        # noinspection PyTypeChecker
+        # noinspection SpellCheckingInspection
         """Generate seed from the mnemonic phrase.
-        Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
-        (empty string) by default.
-        :raises ValueError: If `seed_password` is longer than 256 characters.
-        :raises ValueError: on invalid parameters
+
+        Seed can be protected by password. If a seed should not be protected,
+        the password is treated as `''` (empty string) by default.
+
+        TODO Converted Seed instance is stored and calls to this method always
+        return its deep copy.
+
+        :raises ValueError: on invalid parameter value.
+            If `seed_password` is longer than 256 characters.
+        :raises TypeError: on invalid parameter type
         :rtype: Seed
         :return: Seed
+
+        :Example:
+
+        >>> from binascii import hexlify
+        >>> from pa193mnemonicslytherin import Mnemonic
+        >>> mnemonic = Mnemonic('donor anxiety expect little beef pass agree choice donor'
+        ...                     ' anxiety expect lobster')
+        >>> hexlify(mnemonic.to_seed())
+        b'd951b58b74507e4e34d4162fbf0193a904572c5e28b4d127f05587a8b39b909cdca65078dacec1e272a22306a67d084c51d8ee50442b6bad1492a5f4b46a1c38'
+        >>> s_a = mnemonic.to_seed()
+        >>> s_b = mnemonic.to_seed()
+        >>> s_a == s_b and s_a is not s_b
+        True
+        >>> # examples of invalid use
+        >>> mnemonic.to_seed(123)
+        Traceback (most recent call last):
+        TypeError: argument `seed_password` should be str, not int
+        >>> mnemonic.to_seed('a' * 257)
+        Traceback (most recent call last):
+        ValueError: length of argument `seed_password` should be at most 256, not 257
+
         """
         if not isinstance(seed_password, str):
             raise TypeError('argument `seed_password` should be str, not {}'.format(type(seed_password).__name__))
         # the length of the password is bounded to 256
         if len(seed_password) > MAX_SEED_PASSWORD_LENGTH:
-            raise ValueError('Password is too long')
+            raise ValueError('length of argument `seed_password` should be at most {}, not {}'.format(
+                MAX_SEED_PASSWORD_LENGTH, len(seed_password)))
         # the encoding of both inputs should be UTF-8 NFKD
         mnemonic = self.encode()  # encoding string into bytes, UTF-8 by default
         seed_password = normalize('NFKD', seed_password)
@@ -261,44 +430,122 @@ class Mnemonic(str, _DictionaryAccess):
 
     def to_entropy(self) -> Entropy:
         """Generate entropy from the mnemonic phrase.
+
+        Converted Entropy instance is stored and calls to this method always
+        return its deep copy.
+
         :rtype: Entropy
-        :return: entropy
+        :return: Entropy
+
+        :Example:
+
+        >>> from pa193mnemonicslytherin import Mnemonic
+        >>> mnemonic = Mnemonic('donor anxiety expect little beef pass agree choice donor'
+        ...                     ' anxiety expect lobster')
+        >>> mnemonic.to_entropy()
+        b'AAAAAAAAAAAAAAAA'
+        >>> e_a = mnemonic.to_entropy()
+        >>> e_b = mnemonic.to_entropy()
+        >>> e_a == e_b and e_a is not e_b
+        True
+
         """
         return deepcopy(self.__entropy)
 
 
 def generate(entropy: Entropy, seed_password: str = '') -> Tuple[Mnemonic, Seed]:
+    # noinspection PyTypeChecker
+    # noinspection SpellCheckingInspection
     """Generate mnemonic phrase and seed based on provided entropy.
-    Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
-    (empty string) by default.
-    :raises ValueError: on invalid parameters
-    :raises ValueError: If `seed_password` is longer than 256 characters.
+
+    Seed can be protected by password. If a seed should not be protected,
+    the password is treated as `''` (empty string) by default.
+
+    :raises ValueError: on invalid parameter value.
+        If `seed_password` is longer than 256 characters.
+    :raises TypeError: on invalid parameter type
     :rtype: Tuple[Mnemonic, Seed]
-    :return: Two item tuple where first is mnemonic phrase and second is seed.
+    :return: Two item tuple where first is mnemonic and second is seed.
+
+    :Example:
+
+    >>> from binascii import hexlify
+    >>> from pa193mnemonicslytherin import Entropy, generate
+    >>> mnemonic, seed = generate(Entropy(b'\x41' * 16))
+    >>> mnemonic
+    'donor anxiety expect little beef pass agree choice donor anxiety expect lobster'
+    >>> hexlify(seed)
+    b'd951b58b74507e4e34d4162fbf0193a904572c5e28b4d127f05587a8b39b909cdca65078dacec1e272a22306a67d084c51d8ee50442b6bad1492a5f4b46a1c38'
+    >>> mnemonic_pw, seed_pw = generate(Entropy(b'\x41' * 16), 'secret123')
+    >>> mnemonic_pw
+    'donor anxiety expect little beef pass agree choice donor anxiety expect lobster'
+    >>> hexlify(seed_pw)
+    b'5fd37e778ba95fdc0fc0fe59d0cdba82471557d44541e49d2a43dc52ae40e40a8fe676b23650610ccc2ed55d55a2db495cce994b777b02cff7f3ffb876f25024'
+    >>> mnemonic == mnemonic_pw and seed != seed_pw
+    True
+    >>> # examples of invalid use
+    >>> generate(123, 'secret123')
+    Traceback (most recent call last):
+    TypeError: argument `entropy` should be of type Entropy, got int
+    >>> generate(Entropy(b'\x41' * 16), 123)
+    Traceback (most recent call last):
+    TypeError: argument `seed_password` should be of type str, got int
+
     """
     if not isinstance(entropy, Entropy):
-        raise TypeError('argument `entropy` should be of type Entropy, got {}'.format(type(entropy)))
+        raise TypeError('argument `entropy` should be of type Entropy, got {}'.format(type(entropy).__name__))
     if not isinstance(seed_password, str):
-        raise TypeError('argument `seed_password` should be of type str, got {}'.format(type(seed_password)))
-
+        raise TypeError('argument `seed_password` should be of type str, got {}'.format(type(seed_password).__name__))
     mnemonic = entropy.to_mnemonic()
     seed = mnemonic.to_seed(seed_password)
     return mnemonic, seed
 
 
 def recover(mnemonic: Mnemonic, seed_password: str = '') -> Tuple[Entropy, Seed]:
+    # noinspection PyTypeChecker
+    # noinspection SpellCheckingInspection
     """ Recover initial entropy and seed from provided mnemonic phrase.
-    Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
-    (empty string) by default.
-    :raises ValueError: on invalid parameters
-    :raises ValueError: If `seed_password` is longer than 256 characters.
+
+    Seed can be protected by password. If a seed should not be protected,
+    the password is treated as `''` (empty string) by default.
+
+    :raises ValueError: on invalid parameter value.
+        If `seed_password` is longer than 256 characters.
+    :raises TypeError: on invalid parameter type
     :rtype: Tuple[Entropy, Seed]
     :return: Two item tuple where first is initial entropy and second is seed.
+
+    :Example:
+
+    >>> from binascii import hexlify
+    >>> from pa193mnemonicslytherin import Mnemonic, recover
+    >>> mnemonic = Mnemonic('donor anxiety expect little beef pass agree choice donor'
+    ...                     ' anxiety expect lobster')
+    >>> entropy, seed = recover(mnemonic)
+    >>> entropy
+    b'AAAAAAAAAAAAAAAA'
+    >>> hexlify(seed)
+    b'd951b58b74507e4e34d4162fbf0193a904572c5e28b4d127f05587a8b39b909cdca65078dacec1e272a22306a67d084c51d8ee50442b6bad1492a5f4b46a1c38'
+    >>> entropy_pw, seed_pw = recover(mnemonic, 'secret123')
+    >>> entropy_pw
+    b'AAAAAAAAAAAAAAAA'
+    >>> hexlify(seed_pw)
+    b'5fd37e778ba95fdc0fc0fe59d0cdba82471557d44541e49d2a43dc52ae40e40a8fe676b23650610ccc2ed55d55a2db495cce994b777b02cff7f3ffb876f25024'
+    >>> entropy == entropy_pw and seed != seed_pw
+    True
+    >>> # examples of invalid use
+    >>> recover(123, 'secret123')
+    Traceback (most recent call last):
+    TypeError: argument `mnemonic` should be of type Mnemonic, got int
+    >>> recover(mnemonic, 123)
+    Traceback (most recent call last):
+    TypeError: argument `seed_password` should be of type str, got int
+
     """
     if not isinstance(mnemonic, Mnemonic):
-        raise TypeError('argument `mnemonic` should be of type Mnemonic, got {}'.format(type(mnemonic)))
+        raise TypeError('argument `mnemonic` should be of type Mnemonic, got {}'.format(type(mnemonic).__name__))
     if not isinstance(seed_password, str):
-        raise TypeError('argument `seed_password` should be of type str, got {}'.format(type(seed_password)))
+        raise TypeError('argument `seed_password` should be of type str, got {}'.format(type(seed_password).__name__))
 
     entropy = mnemonic.to_entropy()
     seed = mnemonic.to_seed(seed_password)
@@ -306,20 +553,58 @@ def recover(mnemonic: Mnemonic, seed_password: str = '') -> Tuple[Entropy, Seed]
 
 
 def verify(mnemonic: Mnemonic, expected_seed: Seed, seed_password: str = '') -> bool:
+    # noinspection PyTypeChecker
+    # noinspection SpellCheckingInspection
     """Verify whether mnemonic phrase matches with expected seed.
-    Seed can be protected by password. If a seed should not be protected, the password is treated as `''`
-    (empty string) by default.
-    :raises ValueError: on invalid parameters
-    :raises ValueError: If `seed_password` is longer than 256 characters.
+
+    Seed can be protected by password. If a seed should not be protected,
+    the password is treated as `''` (empty string) by default.
+
+    :raises ValueError: on invalid parameter value.
+        If `seed_password` is longer than 256 characters.
+
+    :raises TypeError: on invalid parameter type
+
     :rtype: bool
     :return: True if provided phrase generates expected seed, False otherwise.
+
+    :Example:
+
+    >>> from binascii import unhexlify
+    >>> from pa193mnemonicslytherin import Mnemonic, Seed, verify
+    >>> mnemonic = Mnemonic('donor anxiety expect little beef pass agree choice donor'
+    ...                     ' anxiety expect lobster')
+    >>> seed = Seed(unhexlify(b'd951b58b74507e4e34d4162fbf0193a904572c5e28b4d127f05587'
+    ...                       b'a8b39b909cdca65078dacec1e272a22306a67d084c51d8ee50442b'
+    ...                       b'6bad1492a5f4b46a1c38'))
+    >>> verify(mnemonic, seed)
+    True
+    >>> verify(mnemonic, mnemonic.to_seed())
+    True
+    >>> password = 'secret123'
+    >>> seed_pw = mnemonic.to_seed(password)
+    >>> verify(mnemonic, seed_pw, password)
+    True
+    >>> verify(mnemonic, Seed(b'\x41' * 64))
+    False
+    >>> # examples of invalid use
+    >>> verify(mnemonic, 123)
+    Traceback (most recent call last):
+    TypeError: argument `expected_seed` should be of type Seed, got int
+    >>> verify(123, Seed(b'\x41' * 64))
+    Traceback (most recent call last):
+    TypeError: argument `mnemonic` should be of type Mnemonic, got int
+    >>> verify(mnemonic, Seed(b'\x41' * 64), 123)
+    Traceback (most recent call last):
+    TypeError: argument `seed_password` should be of type str, got int
+
     """
     if not isinstance(expected_seed, Seed):
-        raise TypeError('argument `expected_seed` should be of type Seed, got {}'.format(type(expected_seed)))
+        raise TypeError('argument `expected_seed` should be of type Seed, got {}'.format(type(expected_seed).__name__))
     if not isinstance(mnemonic, Mnemonic):
-        raise TypeError('argument `mnemonic` should be of type Mnemonic, got {}'.format(type(mnemonic)))
+        raise TypeError('argument `mnemonic` should be of type Mnemonic, got {}'.format(type(mnemonic).__name__))
     if not isinstance(seed_password, str):
-        raise TypeError('argument `seed_password` should be of type str, got {}'.format(type(seed_password)))
+        raise TypeError('argument `seed_password` should be of type str, got {}'.format(type(seed_password).__name__))
 
     generated_seed = mnemonic.to_seed(seed_password)
     return expected_seed == generated_seed
