@@ -248,8 +248,7 @@ def action_generate(config: Config) -> ExitCode:
         return ExitCode.EX_NOINPUT
     except UnicodeError as e:
         logger.critical(str(e))
-        errmsg_alias = "file {} does not contain valid UTF-8".format(config.entropy_filepath)
-        print(errmsg_alias, file=sys.stderr)
+        print(str(e), file=sys.stderr)
         return ExitCode.EX_DATAERR
     if config.format is Config.Format.TEXT_HEXADECIMAL:
         try:
@@ -293,8 +292,7 @@ def action_recover(config: Config) -> ExitCode:
         return ExitCode.EX_NOINPUT
     except UnicodeError as e:
         logger.critical(str(e))
-        errmsg_alias = "file {} does not contain valid UTF-8".format(config.mnemonic_filepath)
-        print(errmsg_alias, file=sys.stderr)
+        print(str(e), file=sys.stderr)
         return ExitCode.EX_DATAERR
     try:
         mnemonic = Mnemonic(mnemonic)
@@ -333,8 +331,7 @@ def action_verify(config: Config) -> ExitCode:
         return ExitCode.EX_NOINPUT
     except UnicodeError as e:
         logger.critical(str(e))
-        errmsg_alias = "file {} does not contain valid UTF-8".format(config.mnemonic_filepath)
-        print(errmsg_alias, file=sys.stderr)
+        print(str(e), file=sys.stderr)
         return ExitCode.EX_DATAERR
     try:
         mnemonic = Mnemonic(mnemonic)
@@ -352,8 +349,7 @@ def action_verify(config: Config) -> ExitCode:
         return ExitCode.EX_NOINPUT
     except UnicodeError as e:
         logger.critical(str(e))
-        errmsg_alias = "file {} does not contain valid UTF-8".format(config.seed_filepath)
-        print(errmsg_alias, file=sys.stderr)
+        print(str(e), file=sys.stderr)
         return ExitCode.EX_DATAERR
     if config.format is Config.Format.TEXT_HEXADECIMAL:
         try:
