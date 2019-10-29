@@ -296,7 +296,7 @@ class TestMain(unittest.TestCase):
                                  '-s', seed_path],
                                  ExitCode.EX_DATAERR,
                                  stdout_check='',
-                                 stderr_check="file {} does not contain valid UTF-8\n".format(entropy_path))
+                                 stderr_check=None)
 
     def test_generate_invalid_password(self):
         entropy = TREZOR_TEST_VECTORS['english'][0][0]
