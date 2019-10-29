@@ -46,6 +46,12 @@ def get_invalid_entropies() -> List[Tuple[Union[str, bytes], Config.Format, Opti
                                       Config.Format.TEXT_HEXADECIMAL, None))
     # endregion
     # TODO invalid characters in hex string
+    #Cases: non-Unicode, non_ascii, odd-length
+    #odd-length should be covered by the previous region
+    #for non-UTF-8 be a separate test function
+    entropy_non_ascii = "1122334455667ЫЫ899ЩЩBBCCDDEEFF00"
+    invalid_entropies.append((entropy_non_ascii,
+                              Config.Format.TEXT_HEXADECIMAL, None))
     return invalid_entropies
 
 
@@ -78,6 +84,18 @@ def get_invalid_seeds() -> List[Tuple[Union[str, bytes], Config.Format, Optional
     # TODO invalid characters in hex string
     return invalid_seeds
 
+
+def get_invalid_passwords() -> List[Tuple[str, Optional[str]]]:
+    """
+    :return: List of invalid examples as tuples, where first is invalid input,
+             and second is optional error message to be checked on
+             program's stderr.
+    """
+    psw_non_utf8 = "icpa\u202e\U000e0ec1\udcaassword1"
+    invalid_passwords = [(psw_non_utf8, None)]
+    # TODO invalid UTF-8 sequences, too long passwords
+    #long passwords raise argparse.ArgumentTypeError, need separate test
+    return invalid_passwords
 
 class TestMain(unittest.TestCase):
     """Integration tests for CLI tool."""
@@ -262,6 +280,40 @@ class TestMain(unittest.TestCase):
                                         stdout_check='',
                                         stderr_check=stderr)
 
+    def test_generate_non_unicode_entropy(self):
+        entropy = b'\xff' * 16
+        with TemporaryDirectory() as tmpdir:
+            seed_path = os.path.join(tmpdir, '__seed__')
+            mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
+            entropy_path = os.path.join(tmpdir, '__entropy__')
+            with open(entropy_path, 'wb') as entropy_file:
+                entropy_file.write(entropy)
+            self.assert_program([self.SCRIPT, '-g', '--format', Config.Format.TEXT_HEXADECIMAL.value, '-e', entropy_path,
+                             '-m', mnemonic_path,
+                             '-s', seed_path], ExitCode.EX_DATAERR,
+                              stdout_check='',
+                              stderr_check='string argument should contain only ASCII characters\n')
+
+    def test_generate_invalid_password(self):
+        entropy = TREZOR_TEST_VECTORS['english'][0][0]
+        with TemporaryDirectory() as tmpdir:
+            for password, stderr in get_invalid_passwords():
+                with self.subTest(password=password):
+                    seed_path = os.path.join(tmpdir, '__seed__')
+                    mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
+                    entropy_path = os.path.join(tmpdir, '__entropy__')
+                    with open(entropy_path, 'w') as entropy_file:
+                        entropy_file.write(entropy)
+                    self.assert_program([self.SCRIPT, '-g',
+                                         '-e', entropy_path,
+                                         '-m', mnemonic_path,
+                                         '-s', seed_path,
+                                         '--format', Config.Format.TEXT_HEXADECIMAL.value,
+                                         '-p', password], 
+                                         ExitCode.EX_DATAERR,
+                                        stdout_check='',
+                                        stderr_check=stderr)
+
     def test_recover(self):
         with TemporaryDirectory() as tmpdir:
             for test_vector in TREZOR_TEST_VECTORS['english']:
@@ -303,6 +355,41 @@ class TestMain(unittest.TestCase):
                                          '-e', entropy_path,
                                          '-m', mnemonic_path,
                                          '-s', seed_path], ExitCode.EX_DATAERR,
+                                        stdout_check='',
+                                        stderr_check=stderr)
+
+    def test_recover_non_unicode_mnemonic(self):
+        words = [b"\xff\xff\xff\xff"] * 12
+        mnemonic = b'\x20'.join(words)
+        with TemporaryDirectory() as tmpdir:
+            seed_path = os.path.join(tmpdir, '__seed__')
+            mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
+            entropy_path = os.path.join(tmpdir, '__entropy__')
+            with open(mnemonic_path, 'wb') as mnemonic_file:
+                mnemonic_file.write(mnemonic)
+            self.assert_program([self.SCRIPT, '-r',
+                             '-e', entropy_path,
+                             '-m', mnemonic_path,
+                             '-s', seed_path], ExitCode.EX_DATAERR,
+                              stdout_check='',
+                              stderr_check="file {} does not contain valid UTF-8\n".format(mnemonic_path))
+
+    def test_recover_non_unicode_password(self):
+        mnemonic = TREZOR_TEST_VECTORS['english'][0][1]
+        with TemporaryDirectory() as tmpdir:
+            for password, stderr in get_invalid_passwords():
+                with self.subTest(password=password):
+                    seed_path = os.path.join(tmpdir, '__seed__')
+                    mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
+                    entropy_path = os.path.join(tmpdir, '__entropy__')
+                    with open(mnemonic_path, 'w') as mnemonic_file:
+                        mnemonic_file.write(mnemonic)
+                    self.assert_program([self.SCRIPT, '-r',
+                                         '-e', entropy_path,
+                                         '-m', mnemonic_path,
+                                         '-s', seed_path,
+                                         '-p', password], 
+                                         ExitCode.EX_DATAERR,
                                         stdout_check='',
                                         stderr_check=stderr)
 
