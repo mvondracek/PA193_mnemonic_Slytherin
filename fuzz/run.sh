@@ -2,7 +2,7 @@
 
 handle_fail()
 {
-  let "fails++"; mkdir "fail-${fails}" ; sed -i "1iFailed instance number ${fails}, with password '$password'" out ; cat out ; cat out >> fails ; mv out "fail-${fails}" ;
+  let "fails++"; mkdir "fail-${fails}" ; sed -i "1iFailed instance number ${fails}, with password '${password}'" out ; cat out ; cat out >> fails ; mv out "fail-${fails}" ;
 }>&2
 
 fails=0
