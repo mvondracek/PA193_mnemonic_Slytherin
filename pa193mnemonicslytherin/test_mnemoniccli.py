@@ -46,9 +46,9 @@ def get_invalid_entropies() -> List[Tuple[Union[str, bytes], Config.Format, Opti
                                       Config.Format.TEXT_HEXADECIMAL, None))
     # endregion
     # TODO invalid characters in hex string
-    #Cases: non-Unicode, non_ascii, odd-length
-    #odd-length should be covered by the previous region
-    #for non-UTF-8 be a separate test function
+    # Cases: non-Unicode, non_ascii, odd-length
+    # odd-length should be covered by the previous region
+    # for non-UTF-8 be a separate test function
     entropy_non_ascii = "1122334455667ЫЫ899ЩЩBBCCDDEEFF00"
     invalid_entropies.append((entropy_non_ascii,
                               Config.Format.TEXT_HEXADECIMAL, None))
@@ -93,9 +93,10 @@ def get_invalid_passwords() -> List[Tuple[str, Optional[str]]]:
     """
     psw_non_utf8 = "icpa\u202e\U000e0ec1\udcaassword1"
     invalid_passwords = [(psw_non_utf8, None)]
-    # TODO invalid UTF-8 sequences, too long passwords
-    #long passwords raise argparse.ArgumentTypeError, need separate test
+    # Cases: invalid UTF-8 sequences, too long passwords
+    # TODO: long passwords raise argparse.ArgumentTypeError, need separate test
     return invalid_passwords
+
 
 class TestMain(unittest.TestCase):
     """Integration tests for CLI tool."""
@@ -288,11 +289,14 @@ class TestMain(unittest.TestCase):
             entropy_path = os.path.join(tmpdir, '__entropy__')
             with open(entropy_path, 'wb') as entropy_file:
                 entropy_file.write(entropy)
-            self.assert_program([self.SCRIPT, '-g', '--format', Config.Format.TEXT_HEXADECIMAL.value, '-e', entropy_path,
-                             '-m', mnemonic_path,
-                             '-s', seed_path], ExitCode.EX_DATAERR,
-                              stdout_check='',
-                              stderr_check='string argument should contain only ASCII characters\n')
+            self.assert_program([self.SCRIPT, '-g', '--format',
+                                 Config.Format.TEXT_HEXADECIMAL.value,
+                                 '-e', entropy_path,
+                                 '-m', mnemonic_path,
+                                 '-s', seed_path],
+                                 ExitCode.EX_DATAERR,
+                                 stdout_check='',
+                                 stderr_check="file {} does not contain valid UTF-8\n".format(entropy_path)
 
     def test_generate_invalid_password(self):
         entropy = TREZOR_TEST_VECTORS['english'][0][0]
@@ -309,8 +313,8 @@ class TestMain(unittest.TestCase):
                                          '-m', mnemonic_path,
                                          '-s', seed_path,
                                          '--format', Config.Format.TEXT_HEXADECIMAL.value,
-                                         '-p', password], 
-                                         ExitCode.EX_DATAERR,
+                                         '-p', password],
+                                        ExitCode.EX_DATAERR,
                                         stdout_check='',
                                         stderr_check=stderr)
 
@@ -368,11 +372,12 @@ class TestMain(unittest.TestCase):
             with open(mnemonic_path, 'wb') as mnemonic_file:
                 mnemonic_file.write(mnemonic)
             self.assert_program([self.SCRIPT, '-r',
-                             '-e', entropy_path,
-                             '-m', mnemonic_path,
-                             '-s', seed_path], ExitCode.EX_DATAERR,
-                              stdout_check='',
-                              stderr_check="file {} does not contain valid UTF-8\n".format(mnemonic_path))
+                                 '-e', entropy_path,
+                                 '-m', mnemonic_path,
+                                 '-s', seed_path],
+                                 ExitCode.EX_DATAERR,
+                                 stdout_check='',
+                                 stderr_check="file {} does not contain valid UTF-8\n".format(mnemonic_path))
 
     def test_recover_non_unicode_password(self):
         mnemonic = TREZOR_TEST_VECTORS['english'][0][1]
@@ -388,8 +393,8 @@ class TestMain(unittest.TestCase):
                                          '-e', entropy_path,
                                          '-m', mnemonic_path,
                                          '-s', seed_path,
-                                         '-p', password], 
-                                         ExitCode.EX_DATAERR,
+                                         '-p', password],
+                                        ExitCode.EX_DATAERR,
                                         stdout_check='',
                                         stderr_check=stderr)
 
