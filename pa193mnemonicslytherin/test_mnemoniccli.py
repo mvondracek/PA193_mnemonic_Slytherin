@@ -296,7 +296,7 @@ class TestMain(unittest.TestCase):
                                  '-s', seed_path],
                                  ExitCode.EX_DATAERR,
                                  stdout_check='',
-                                 stderr_check="file {} does not contain valid UTF-8\n".format(entropy_path)
+                                 stderr_check="file {} does not contain valid UTF-8\n".format(entropy_path))
 
     def test_generate_invalid_password(self):
         entropy = TREZOR_TEST_VECTORS['english'][0][0]
@@ -304,7 +304,7 @@ class TestMain(unittest.TestCase):
             for password, stderr in get_invalid_passwords():
                 with self.subTest(password=password):
                     seed_path = os.path.join(tmpdir, '__seed__')
-                    mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
+                    mnemonic_path = os.path.join(tmpdir,'__mnemonic__')
                     entropy_path = os.path.join(tmpdir, '__entropy__')
                     with open(entropy_path, 'w') as entropy_file:
                         entropy_file.write(entropy)
