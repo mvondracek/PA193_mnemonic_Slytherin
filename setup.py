@@ -39,10 +39,8 @@ setup(
         'pa193mnemonicslytherin': ['*.lst'],
     },
     tests_require=[
-        'nose',
         'coverage',
     ],
-    test_suite='nose.collector',
     entry_points={
         'console_scripts': [
             'mnemoniccli = pa193mnemonicslytherin.mnemoniccli:cli_entry_point',

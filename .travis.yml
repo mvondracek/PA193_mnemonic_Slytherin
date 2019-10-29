@@ -6,7 +6,7 @@ python:
 install:
   - pip install coveralls
 script:
-  - python setup.py test
+  - python -m unittest
 after_success:
-  - coverage run --source=pa193mnemonicslytherin setup.py test
+  - coverage run --source=pa193mnemonicslytherin python -m unittest
   - coveralls
