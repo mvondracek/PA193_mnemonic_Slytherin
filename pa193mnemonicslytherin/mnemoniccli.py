@@ -242,13 +242,14 @@ def action_generate(config: Config) -> ExitCode:
     try:
         with open(config.entropy_filepath, config.format.read_mode) as file:
             entropy = file.read()  # type: typing.Union[bytes, str]
-    except (FileNotFoundError, UnicodeError) as e:
+    except FileNotFoundError as e:
         logger.critical(str(e))
         print(str(e), file=sys.stderr)
-        if isinstance(e, FileNotFoundError):
-            return ExitCode.EX_NOINPUT
-        else:
-            return ExitCode.EX_DATAERR
+        return ExitCode.EX_NOINPUT
+    except UnicodeError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return ExitCode.EX_DATAERR
     if config.format is Config.Format.TEXT_HEXADECIMAL:
         try:
             entropy = unhexlify(entropy)  # type: bytes
@@ -285,13 +286,14 @@ def action_recover(config: Config) -> ExitCode:
     try:
         with open(config.mnemonic_filepath, 'r', encoding='utf-8') as file:
             mnemonic = file.read()  # type: str
-    except (FileNotFoundError, UnicodeError) as e:
+    except FileNotFoundError as e:
         logger.critical(str(e))
         print(str(e), file=sys.stderr)
-        if isinstance(e, FileNotFoundError):
-            return ExitCode.EX_NOINPUT
-        else:
-            return ExitCode.EX_DATAERR
+        return ExitCode.EX_NOINPUT
+    except UnicodeError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return ExitCode.EX_DATAERR
     try:
         mnemonic = Mnemonic(mnemonic)
     except ValueError as e:
@@ -323,13 +325,14 @@ def action_verify(config: Config) -> ExitCode:
     try:
         with open(config.mnemonic_filepath, 'r', encoding='utf-8') as file:
             mnemonic = file.read()  # type: str
-    except (FileNotFoundError, UnicodeError) as e:
+    except FileNotFoundError as e:
         logger.critical(str(e))
         print(str(e), file=sys.stderr)
-        if isinstance(e, FileNotFoundError):
-            return ExitCode.EX_NOINPUT
-        else:
-            return ExitCode.EX_DATAERR
+        return ExitCode.EX_NOINPUT
+    except UnicodeError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return ExitCode.EX_DATAERR
     try:
         mnemonic = Mnemonic(mnemonic)
     except ValueError as e:
@@ -340,13 +343,14 @@ def action_verify(config: Config) -> ExitCode:
     try:
         with open(config.seed_filepath, config.format.read_mode) as file:
             seed = file.read()  # type: typing.Union[bytes, str]
-    except (FileNotFoundError, UnicodeError) as e:
+    except FileNotFoundError as e:
         logger.critical(str(e))
         print(str(e), file=sys.stderr)
-        if isinstance(e, FileNotFoundError):
-            return ExitCode.EX_NOINPUT
-        else:
-            return ExitCode.EX_DATAERR
+        return ExitCode.EX_NOINPUT
+    except UnicodeError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return ExitCode.EX_DATAERR
     if config.format is Config.Format.TEXT_HEXADECIMAL:
         try:
             seed = unhexlify(seed)  # type: bytes
