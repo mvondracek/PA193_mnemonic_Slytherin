@@ -94,7 +94,7 @@ class TestMainBase(unittest.TestCase):
         :param stdout_check: String with which `stdout` should be compared, `None` if `stdout` should not be empty.
         :param stderr_check: String with which `stderr` should be compared, `None` if `stderr` should not be empty.
         """
-        cli = subprocess.run([self.PYTHON] + args, timeout=self.TIMEOUT, cwd=self.SCRIPT_DIR,
+        cli = subprocess.run(args, timeout=self.TIMEOUT, cwd=self.SCRIPT_DIR,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         if stderr_check is not None:  # check stderr first, assertion fails with unexpected errors in stderr
             self.assertEqual(stderr_check, cli.stderr)
