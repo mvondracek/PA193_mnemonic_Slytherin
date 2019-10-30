@@ -14,7 +14,8 @@ import sys
 from unittest import TestCase
 
 from pa193mnemonicslytherin.mnemonic import Entropy, Mnemonic, Seed, generate, recover, verify
-from pa193mnemonicslytherin.test_mnemonic import get_random_valid_entropy_bytes, get_random_valid_mnemonic_phrase
+from pa193mnemonicslytherin.test_mnemonic import get_random_valid_entropy_bytes, get_random_valid_mnemonic_phrase, \
+    get_random_valid_password
 
 try:
     # noinspection PyPackageRequirements
@@ -37,7 +38,7 @@ class TestMnemonicReference(TestCase):
 
     def test_generate(self):
         for i in range(self.SUBTEST_COUNT):
-            password = ""
+            password = get_random_valid_password()
             entropy_bytes = get_random_valid_entropy_bytes()
             with self.subTest(i=i, entropy_bytes=entropy_bytes, password=password):
                 mnemonic_slytherin, seed__slytherin = generate(Entropy(entropy_bytes), password)
@@ -49,7 +50,7 @@ class TestMnemonicReference(TestCase):
 
     def test_recover(self):
         for i in range(self.SUBTEST_COUNT):
-            password = ""
+            password = get_random_valid_password()
             mnemonic_phrase = get_random_valid_mnemonic_phrase()
             with self.subTest(i=i, mnemonic_phrase=mnemonic_phrase, password=password):
                 entropy_slytherin, seed_slytherin = recover(Mnemonic(mnemonic_phrase), password)
@@ -61,7 +62,7 @@ class TestMnemonicReference(TestCase):
 
     def test_verify(self):
         for i in range(10):
-            password = ""
+            password = get_random_valid_password()
             mnemonic_phrase = get_random_valid_mnemonic_phrase()
             seed_trezor = self.trezor.to_seed(mnemonic_phrase, password)
             with self.subTest(i=i, mnemonic_phrase=mnemonic_phrase, seed=seed_trezor, password=password):

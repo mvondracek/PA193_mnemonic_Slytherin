@@ -74,7 +74,7 @@ class TestMnemoniccliReference(TestMainBase):
     def test_recover(self):
         # TODO refactor this method to use shared code with `TestMain.test_recover`
         for i in range(self.SUBTEST_COUNT):
-            password = ""
+            password = get_random_valid_password()
             mnemonic_phrase = get_random_valid_mnemonic_phrase()
             entropy_trezor = self.trezor.to_entropy(mnemonic_phrase)
             seed_trezor = self.trezor.to_seed(mnemonic_phrase, password)
@@ -107,7 +107,7 @@ class TestMnemoniccliReference(TestMainBase):
     def test_verify(self):
         # TODO refactor this method to use shared code with `TestMain.test_verify`
         for i in range(self.SUBTEST_COUNT):
-            password = ""
+            password = get_random_valid_password()
             mnemonic_phrase = get_random_valid_mnemonic_phrase()
             seed_trezor = self.trezor.to_seed(mnemonic_phrase, password)
             with self.subTest(i=i, mnemonic_phrase=mnemonic_phrase, seed=seed_trezor, password=password):
