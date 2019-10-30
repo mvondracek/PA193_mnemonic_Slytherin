@@ -13,6 +13,7 @@ import io
 from binascii import unhexlify
 from contextlib import closing
 from typing import BinaryIO, List, Any
+from unicodedata import normalize
 from unittest import TestCase
 from unittest.mock import patch
 
@@ -188,10 +189,11 @@ def extract_checksum(mnemonic_phrase: str, dictionary_name: str = ENGLISH_DICTIO
     :raises PermissionError: If dictionary could not be retrieved due to denied permission.  # TODO test this
     :raises ValueError: Cannot instantiate dictionary  # TODO more descriptive message 1)
     :raises ValueError: Cannot instantiate dictionary  # TODO more descriptive message 2)
-    :raises TypeError: `mnemonic_phrase` is not instance of `str`.
+    :raises TypeError: `mnemonic_phrase` is not an instance of `str`.
     :raises ValueError: `mnemonic_phrase` has invalid number of words, expected one of (12, 15, 18, 21, 24).
     :raises ValueError: `mnemonic_phrase` contains word which is not in current dictionary.
     :raises UnicodeError: If dictionary contains invalid unicode sequences.  # TODO test this
+    :raises UnicodeError: `mnemonic_phrase` isn't a valid UTF-8 string
     """
     if not isinstance(dictionary_name, str):
         raise TypeError('argument `dictionary_name` should be str, not {}'.format(
@@ -229,6 +231,10 @@ def extract_checksum(mnemonic_phrase: str, dictionary_name: str = ENGLISH_DICTIO
     # region TODO copied from Mnemonic.__init__
     if not isinstance(mnemonic_phrase, str):
         raise TypeError('argument `mnemonic_phrase` should be str, not {}'.format(type(mnemonic_phrase).__name__))
+
+    # to raise UnicodeError for invalid UTF-8
+    mnemonic_phrase.encode('utf-8')
+    mnemonic_phrase = normalize('NFKD', mnemonic_phrase)
 
     words = mnemonic_phrase.split()
     n_words = len(words)
@@ -293,6 +299,12 @@ class TestInternalTestHelpers(TestCase):
                                             r'argument `mnemonic_phrase` contains word (.+) which is not in '
                                             r'current dictionary'):
                     extract_checksum(test_input)
+
+    def test_extract_checksum_non_utf8_mnemonic(self):
+        words = ["mn3\n\udcd6"] * 12
+        mnemonic_non_utf8 = ' '.join(words)
+        with self.assertRaises(UnicodeError):
+            extract_checksum(mnemonic_non_utf8)
 
     def test_extract_checksum_invalid_dictionary_name(self):
         for test_input in Test_DictionaryAccess.INVALID_DICTIONARY_NAMES:
@@ -678,3 +690,10 @@ class Test_DictionaryAccess(TestCase):
             with patch.object(pkg_resources, 'resource_stream', return_value=dictionary_mock):
                 with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
                     _DictionaryAccess()
+
+    def test___init___invalid_dictionary_non_utf8(self):
+        dictionary_mock = io.BytesIO(
+            b'\xff\xff\xff\n' * self.VALID_DICTIONARY_LINE_COUNT)
+        with patch.object(pkg_resources, 'resource_stream', return_value=dictionary_mock):
+            with self.assertRaises(UnicodeError):
+                _DictionaryAccess()

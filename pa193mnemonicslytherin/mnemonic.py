@@ -69,7 +69,7 @@ class _DictionaryAccess:
         :raises FileNotFoundError: If dictionary file with given `dictionary_name` could not be found.
         :raises PermissionError: If dictionary could not be retrieved due to denied permission.  # TODO test this
         :raises ValueError: on invalid dictionary
-        :raises UnicodeError: If dictionary contains invalid unicode sequences.  # TODO test this
+        :raises UnicodeError: If dictionary contains invalid unicode sequences.
         :rtype: Tuple[List[str], Dict[str, int]]
         :return: List and dictionary of words
         """
