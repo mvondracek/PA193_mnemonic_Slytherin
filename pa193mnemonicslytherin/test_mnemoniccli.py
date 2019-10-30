@@ -83,7 +83,7 @@ class TestMainBase(unittest.TestCase):
     """Integration tests for CLI tool."""
     TIMEOUT = 5  # seconds until we terminate the program
     PYTHON = 'python'
-    SCRIPT = 'mnemoniccli.py'
+    SCRIPT = 'mnemoniccli'
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
     def assert_program_cli(self, args: List[str], exitcode: ExitCode,
