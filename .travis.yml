@@ -5,6 +5,7 @@ python:
   - "3.7"
 install:
   - pip install coveralls
+  - cd test-reference && ./install.sh
 script:
   - python setup.py test
 after_success:
