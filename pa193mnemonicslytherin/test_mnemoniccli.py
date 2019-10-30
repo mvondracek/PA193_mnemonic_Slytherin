@@ -79,7 +79,7 @@ def get_invalid_seeds() -> List[Tuple[Union[str, bytes], Config.Format, Optional
     return invalid_seeds
 
 
-class TestMain(unittest.TestCase):
+class TestMainBase(unittest.TestCase):
     """Integration tests for CLI tool."""
     TIMEOUT = 5  # seconds until we terminate the program
     PYTHON = 'python'
@@ -152,6 +152,8 @@ class TestMain(unittest.TestCase):
     def assert_program_success(self, args: List[str]):
         self.assert_program(args, ExitCode.EX_OK, stdout_check=None, stderr_check='')
 
+
+class TestMain(TestMainBase):
     def test_arguments_error(self):
         """invalid arguments"""
         self.assert_program_error([self.SCRIPT], ExitCode.ARGUMENTS)
