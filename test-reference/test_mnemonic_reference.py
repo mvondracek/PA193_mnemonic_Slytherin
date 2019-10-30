@@ -61,7 +61,7 @@ class TestMnemonicReference(TestCase):
                 self.assertEqual(seed_trezor, bytes(seed_slytherin))
 
     def test_verify(self):
-        for i in range(10):
+        for i in range(self.SUBTEST_COUNT):
             password = get_random_valid_password()
             mnemonic_phrase = get_random_valid_mnemonic_phrase()
             seed_trezor = self.trezor.to_seed(mnemonic_phrase, password)
