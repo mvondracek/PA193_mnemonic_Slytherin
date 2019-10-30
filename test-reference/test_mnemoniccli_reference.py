@@ -54,7 +54,8 @@ class TestMnemoniccliReference(TestMainBase):
                         entropy_path = os.path.join(tmpdir, '__entropy__')
                         with open(entropy_path, io_format.write_mode) as entropy_file:
                             entropy_file.write(
-                                entropy_bytes if io_format is Config.Format.BINARY else str(hexlify(entropy_bytes), 'ascii'))
+                                entropy_bytes if io_format is Config.Format.BINARY else str(hexlify(entropy_bytes),
+                                                                                            'ascii'))
                         self.assert_program([self.SCRIPT, '-g', '--format', io_format.value, '-p', password,
                                              '-e', entropy_path,
                                              '-m', mnemonic_path,
@@ -118,7 +119,8 @@ class TestMnemoniccliReference(TestMainBase):
                             mnemonic_file.write(mnemonic_phrase)
                         with open(seed_path, io_format.write_mode) as seed_file:
                             seed_file.write(
-                                seed_trezor if io_format is Config.Format.BINARY else str(hexlify(seed_trezor), 'ascii'))
+                                seed_trezor if io_format is Config.Format.BINARY else str(hexlify(seed_trezor),
+                                                                                          'ascii'))
                         self.assert_program([self.SCRIPT, '-v', '--format', io_format.value, '-p', password,
                                              '-m', mnemonic_path,
                                              '-s', seed_path], ExitCode.EX_OK,
