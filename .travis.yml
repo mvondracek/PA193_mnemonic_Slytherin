@@ -14,6 +14,7 @@ jobs:
       script: python -m unittest discover -s ./test-reference
 install:
   - pip install coveralls
+  - pip install .
   - ./test-reference/install.sh
 script:
   - python setup.py test
