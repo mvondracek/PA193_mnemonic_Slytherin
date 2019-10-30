@@ -1,5 +1,4 @@
-from PA193_mnemonic_Slytherin.mnemonic import Entropy, Mnemonic, Seed, _DictionaryAccess, ENGLISH_DICTIONARY_PATH
-from PA193_mnemonic_Slytherin.mnemonic import generate, recover, verify
+from pa193mnemonicslytherin.mnemonic import Entropy, Mnemonic, Seed
 
 from mnemonic import Mnemonic as reference_Mnemonic
 
