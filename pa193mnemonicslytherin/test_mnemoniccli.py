@@ -86,10 +86,6 @@ class TestMainBase(unittest.TestCase):
     SCRIPT = 'mnemoniccli.py'
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-    def execute_cli(self, args: List[str]):
-        return subprocess.run([self.PYTHON] + args, timeout=self.TIMEOUT, cwd=self.SCRIPT_DIR,
-                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-
     def assert_program_cli(self, args: List[str], exitcode: ExitCode,
                            stdout_check: Optional[str] = None, stderr_check: Optional[str] = None):
         """Run CLI program and assert its result.
@@ -98,7 +94,8 @@ class TestMainBase(unittest.TestCase):
         :param stdout_check: String with which `stdout` should be compared, `None` if `stdout` should not be empty.
         :param stderr_check: String with which `stderr` should be compared, `None` if `stderr` should not be empty.
         """
-        cli = self.execute_cli(args)
+        cli = subprocess.run([self.PYTHON] + args, timeout=self.TIMEOUT, cwd=self.SCRIPT_DIR,
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         if stderr_check is not None:  # check stderr first, assertion fails with unexpected errors in stderr
             self.assertEqual(stderr_check, cli.stderr)
         else:
