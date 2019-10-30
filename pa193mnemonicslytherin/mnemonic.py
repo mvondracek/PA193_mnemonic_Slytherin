@@ -143,6 +143,7 @@ class Seed(bytes):
 class Entropy(bytes, _DictionaryAccess):
     """Class for entropy representation.
     """
+    VALID_ENTROPY_BYTE_LENGTHS = (16, 20, 24, 28, 32)
 
     def __init__(self, entropy: bytes):
         """Check whether provided bytes represent a valid entropy according to BIP39.
@@ -154,7 +155,7 @@ class Entropy(bytes, _DictionaryAccess):
         > https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
         :raises ValueError: on invalid parameters
         """
-        if not isinstance(entropy, bytes) or len(entropy) not in (16, 20, 24, 28, 32):
+        if not isinstance(entropy, bytes) or len(entropy) not in self.VALID_ENTROPY_BYTE_LENGTHS:
             raise ValueError('Cannot instantiate entropy')
         super().__init__()
         _DictionaryAccess.__init__(self)
