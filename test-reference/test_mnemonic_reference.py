@@ -66,4 +66,4 @@ class TestMnemonicReference(TestCase):
             mnemonic_phrase = get_random_valid_mnemonic_phrase()
             seed_trezor = self.trezor.to_seed(mnemonic_phrase, password)
             with self.subTest(i=i, mnemonic_phrase=mnemonic_phrase, seed=seed_trezor, password=password):
-                self.assertTrue(verify(Mnemonic(mnemonic_phrase), Seed(seed_trezor)))
+                self.assertTrue(verify(Mnemonic(mnemonic_phrase), Seed(seed_trezor), password))
