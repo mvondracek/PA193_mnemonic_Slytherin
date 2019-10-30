@@ -3,21 +3,18 @@ python:
   - "3.5"
   - "3.6"
   - "3.7"
-jobs:
-  include:
-    - stage: "Tests with reference implementation"
-      python: "3.5"
-      script: python -m unittest discover -s ./test-reference
-    - python: "3.6"
-      script: python -m unittest discover -s ./test-reference
-    - python: "3.7"
-      script: python -m unittest discover -s ./test-reference
+env:
+  - TEST_SUITE="unit"
+  - TEST_SUITE="integration"
+  - TEST_SUITE="reference"
 install:
   - pip install coveralls
   - pip install .
   - ./test-reference/install.sh
 script:
-  - python setup.py test
+  - "if [[ ${TEST_SUITE} == 'unit' ]]; then python -m unittest pa193mnemonicslytherin/test_mnemonic.py ; fi"
+  - "if [[ ${TEST_SUITE} == 'integration' ]]; then python -m unittest pa193mnemonicslytherin/test_mnemoniccli.py ; fi"
+  - "if [[ ${TEST_SUITE} == 'reference' ]]; then python -m unittest discover -s ./test-reference ; fi"
 after_success:
   - coverage run --source=pa193mnemonicslytherin setup.py test
   - coveralls
