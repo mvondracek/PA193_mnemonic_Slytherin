@@ -51,10 +51,11 @@ def get_invalid_entropies() -> List[Tuple[Union[str, bytes], Config.Format, Opti
     # for non-UTF-8 be a separate test function
     entropy_non_ascii = "1122334455667ЫЫ899ЩЩBBCCDDEEFF00"
     entropy_non_hex = "Z" * 16
-    invalid_entropies.extend([(entropy_non_ascii,
-                               Config.Format.TEXT_HEXADECIMAL, None),
-                              (entropy_non_hex,
-                               Config.Format.TEXT_HEXADECIMAL, None)])
+    entropy_odd_length = "aaF"
+    invalid_entropies.extend([(entropy_non_ascii, Config.Format.TEXT_HEXADECIMAL, None),
+                              (entropy_non_hex, Config.Format.TEXT_HEXADECIMAL, None),
+                              (entropy_odd_length, Config.Format.TEXT_HEXADECIMAL, None),
+                              ])
     return invalid_entropies
 
 
@@ -94,8 +95,11 @@ def get_invalid_seeds() -> List[Tuple[Union[str, bytes], Config.Format, Optional
     # Cases: non-ASCII, non-hex
     seed_non_ascii = "Ы" * SEED_LEN
     seed_non_hex = "Z" * SEED_LEN
+    seed_odd_length = "aaF"
     invalid_seeds.extend([(seed_non_ascii, Config.Format.TEXT_HEXADECIMAL, None),
-                          (seed_non_hex, Config.Format.TEXT_HEXADECIMAL, None)])
+                          (seed_non_hex, Config.Format.TEXT_HEXADECIMAL, None),
+                          (seed_odd_length, Config.Format.TEXT_HEXADECIMAL, None),
+                          ])
     return invalid_seeds
 
 
