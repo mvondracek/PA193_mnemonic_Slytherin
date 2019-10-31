@@ -240,7 +240,7 @@ class TestMain(unittest.TestCase):
                 [self.SCRIPT, '-v', '-m', non_existing_filepath, '-s', non_existing_filepath],
                 ExitCode.EX_NOINPUT)
 
-            with open(os.path.join(tmpdir, '__this_file_exists__.txt'), 'w') as f:
+            with open(os.path.join(tmpdir, '__this_file_exists__.txt'), 'w', encoding='utf-8') as f:
                 f.write('foo bar')
             self.assert_program_error([self.SCRIPT, '-v', '-m', non_existing_filepath, '-s', f.name],
                                       ExitCode.EX_NOINPUT)
@@ -253,7 +253,7 @@ class TestMain(unittest.TestCase):
                         seed_path = os.path.join(tmpdir, '__seed__')
                         mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
                         entropy_path = os.path.join(tmpdir, '__entropy__')
-                        with open(entropy_path, io_format.write_mode) as entropy_file:
+                        with open(entropy_path, io_format.write_mode, encoding=io_format.encoding) as entropy_file:
                             entropy_file.write(
                                 unhexlify(test_vector[0]) if io_format is Config.Format.BINARY else test_vector[0])
                         self.assert_program([self.SCRIPT, '-g', '--format', io_format.value, '-p', TREZOR_PASSWORD,
@@ -263,12 +263,12 @@ class TestMain(unittest.TestCase):
                                             stdout_check='[DONE] Generate, mnemonic in {}, seed in {}.\n'.format(
                                                 mnemonic_path, seed_path),
                                             stderr_check='')
-                        with open(seed_path, io_format.read_mode) as seed_file:
+                        with open(seed_path, io_format.read_mode, encoding=io_format.encoding) as seed_file:
                             content = seed_file.read()
                             if io_format is Config.Format.BINARY:
                                 seed = str(hexlify(content), 'ascii')
                             self.assertEqual(test_vector[2], seed)
-                        with open(mnemonic_path, 'r') as mnemonic_file:
+                        with open(mnemonic_path, 'r', encoding='utf-8') as mnemonic_file:
                             self.assertEqual(test_vector[1], mnemonic_file.read())
 
     def test_generate_invalid_entropy(self):
@@ -278,7 +278,7 @@ class TestMain(unittest.TestCase):
                     seed_path = os.path.join(tmpdir, '__seed__')
                     mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
                     entropy_path = os.path.join(tmpdir, '__entropy__')
-                    with open(entropy_path, io_format.write_mode) as entropy_file:
+                    with open(entropy_path, io_format.write_mode, encoding=io_format.encoding) as entropy_file:
                         entropy_file.write(entropy)
                     self.assert_program([self.SCRIPT, '-g', '--format', io_format.value,
                                          '-e', entropy_path,
@@ -312,7 +312,7 @@ class TestMain(unittest.TestCase):
                         seed_path = os.path.join(tmpdir, '__seed__')
                         mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
                         entropy_path = os.path.join(tmpdir, '__entropy__')
-                        with open(mnemonic_path, 'w') as mnemonic_file:
+                        with open(mnemonic_path, 'w', encoding='utf-8') as mnemonic_file:
                             mnemonic_file.write(test_vector[1])
                         self.assert_program([self.SCRIPT, '-r', '--format', io_format.value, '-p', TREZOR_PASSWORD,
                                              '-e', entropy_path,
@@ -321,12 +321,12 @@ class TestMain(unittest.TestCase):
                                             stdout_check='[DONE] Recover, entropy in {}, seed in {}.\n'.format(
                                                 entropy_path, seed_path),
                                             stderr_check='')
-                        with open(seed_path, io_format.read_mode) as seed_file:
+                        with open(seed_path, io_format.read_mode, encoding=io_format.encoding) as seed_file:
                             content = seed_file.read()
                             if io_format is Config.Format.BINARY:
                                 seed = str(hexlify(content), 'ascii')
                             self.assertEqual(test_vector[2], seed)
-                        with open(entropy_path, io_format.read_mode) as entropy_file:
+                        with open(entropy_path, io_format.read_mode, encoding=io_format.encoding) as entropy_file:
                             content = entropy_file.read()
                             if io_format is Config.Format.BINARY:
                                 entropy = str(hexlify(content), 'ascii')
@@ -339,7 +339,7 @@ class TestMain(unittest.TestCase):
                     seed_path = os.path.join(tmpdir, '__seed__')
                     mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
                     entropy_path = os.path.join(tmpdir, '__entropy__')
-                    with open(mnemonic_path, 'w') as mnemonic_file:
+                    with open(mnemonic_path, 'w', encoding='utf-8') as mnemonic_file:
                         mnemonic_file.write(mnemonic)
                     self.assert_program([self.SCRIPT, '-r',
                                          '-e', entropy_path,
@@ -357,7 +357,7 @@ class TestMain(unittest.TestCase):
                     entropy_path = os.path.join(tmpdir, '__entropy__')
                     with open(mnemonic_path, 'wb') as mnemonic_file:
                         mnemonic_file.write(mnemonic)
-                    self.assert_program([self.SCRIPT, '-r',
+                    self.assert_program([self.SCRIPT, '-r', '--format', Config.Format.TEXT_HEXADECIMAL.value,
                                          '-e', entropy_path,
                                          '-m', mnemonic_path,
                                          '-s', seed_path],
@@ -372,9 +372,9 @@ class TestMain(unittest.TestCase):
                     with self.subTest(mnemonic=test_vector[1], seed=test_vector[2]):
                         seed_path = os.path.join(tmpdir, '__seed__')
                         mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
-                        with open(mnemonic_path, 'w') as mnemonic_file:
+                        with open(mnemonic_path, 'w', encoding='utf-8') as mnemonic_file:
                             mnemonic_file.write(test_vector[1])
-                        with open(seed_path, io_format.write_mode) as seed_file:
+                        with open(seed_path, io_format.write_mode, encoding=io_format.encoding) as seed_file:
                             seed_file.write(
                                 unhexlify(test_vector[2]) if io_format is Config.Format.BINARY else test_vector[2])
                         self.assert_program([self.SCRIPT, '-v', '--format', io_format.value, '-p', TREZOR_PASSWORD,
@@ -395,9 +395,9 @@ class TestMain(unittest.TestCase):
                 with self.subTest(mnemonic=mnemonic, seed=seed, io_format=io_format):
                     seed_path = os.path.join(tmpdir, '__seed__')
                     mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
-                    with open(mnemonic_path, 'w') as mnemonic_file:
+                    with open(mnemonic_path, 'w', encoding='utf-8') as mnemonic_file:
                         mnemonic_file.write(mnemonic)
-                    with open(seed_path, io_format.write_mode) as seed_file:
+                    with open(seed_path, io_format.write_mode, encoding=io_format.encoding) as seed_file:
                         seed_file.write(seed)
                     self.assert_program([self.SCRIPT, '-v', '--format', io_format.value,
                                          '-m', mnemonic_path,
@@ -416,9 +416,9 @@ class TestMain(unittest.TestCase):
                     with self.subTest(mnemonic=mnemonic, seed=seed, io_format=io_format):
                         seed_path = os.path.join(tmpdir, '__seed__')
                         mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
-                        with open(mnemonic_path, 'w') as mnemonic_file:
+                        with open(mnemonic_path, 'w', encoding='utf-8') as mnemonic_file:
                             mnemonic_file.write(mnemonic)
-                        with open(seed_path, io_format.write_mode) as seed_file:
+                        with open(seed_path, io_format.write_mode, encoding=io_format.encoding) as seed_file:
                             seed_file.write(seed)
                         self.assert_program([self.SCRIPT, '-v', '--format', io_format.value,
                                              '-m', mnemonic_path,
@@ -439,7 +439,7 @@ class TestMain(unittest.TestCase):
                         mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
                         with open(mnemonic_path, 'wb') as mnemonic_file:
                             mnemonic_file.write(mnemonic)
-                        with open(seed_path, io_format.write_mode) as seed_file:
+                        with open(seed_path, io_format.write_mode, encoding=io_format.encoding) as seed_file:
                             seed_file.write(seed)
                         self.assert_program([self.SCRIPT, '-v', '--format', io_format.value,
                                              '-m', mnemonic_path,
@@ -453,9 +453,9 @@ class TestMain(unittest.TestCase):
                 with self.subTest(mnemonic=VALID_MNEMONIC_PHRASE_TREZOR, seed=seed, io_format=io_format):
                     seed_path = os.path.join(tmpdir, '__seed__')
                     mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
-                    with open(mnemonic_path, 'w') as mnemonic_file:
+                    with open(mnemonic_path, 'w', encoding='utf-8') as mnemonic_file:
                         mnemonic_file.write(VALID_MNEMONIC_PHRASE_TREZOR)
-                    with open(seed_path, io_format.write_mode) as seed_file:
+                    with open(seed_path, io_format.write_mode, encoding=io_format.encoding) as seed_file:
                         seed_file.write(seed)
                     self.assert_program([self.SCRIPT, '-v', '--format', io_format.value,
                                          '-m', mnemonic_path,
@@ -468,7 +468,7 @@ class TestMain(unittest.TestCase):
         with TemporaryDirectory() as tmpdir:
             seed_path = os.path.join(tmpdir, '__seed__')
             mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
-            with open(mnemonic_path, 'w') as mnemonic_file:
+            with open(mnemonic_path, 'w', encoding='utf-8') as mnemonic_file:
                 mnemonic_file.write(VALID_MNEMONIC_PHRASE_TREZOR)
             with open(seed_path, 'wb') as seed_file:
                 seed_file.write(seed)
@@ -484,7 +484,7 @@ class TestMain(unittest.TestCase):
             non_existing_filepath = os.path.join(tmpdir, '__this_file_does_not_exist__')
             for io_format in Config.Format:
                 mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
-                with open(mnemonic_path, 'w') as mnemonic_file:
+                with open(mnemonic_path, 'w', encoding='utf-8') as mnemonic_file:
                     mnemonic_file.write(VALID_MNEMONIC_PHRASE_TREZOR)
                 self.assert_program([self.SCRIPT, '-v', '--format', io_format.value,
                                      '-m', mnemonic_path,
@@ -501,7 +501,7 @@ class TestMain(unittest.TestCase):
             for seed, io_format in valid_seeds:
                 seed_path = os.path.join(tmpdir, '__seed__')
                 mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
-                with open(seed_path, io_format.write_mode) as seed_file:
+                with open(seed_path, io_format.write_mode, encoding=io_format.encoding) as seed_file:
                     seed_file.write(seed)
                 self.assert_program([self.SCRIPT, '-v', '--format', io_format.value,
                                      '-m', mnemonic_path,
