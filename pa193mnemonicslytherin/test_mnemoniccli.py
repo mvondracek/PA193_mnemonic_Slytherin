@@ -103,16 +103,12 @@ def get_invalid_seeds() -> List[Tuple[Union[str, bytes], Config.Format, Optional
     return invalid_seeds
 
 
-class TestMain(unittest.TestCase):
+class TestMainBase(unittest.TestCase):
     """Integration tests for CLI tool."""
     TIMEOUT = 10  # seconds until we terminate the program
     PYTHON = 'python'
-    SCRIPT = 'mnemoniccli.py'
+    SCRIPT = 'mnemoniccli'
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-
-    def execute_cli(self, args: List[str]):
-        return subprocess.run([self.PYTHON] + args, timeout=self.TIMEOUT, cwd=self.SCRIPT_DIR,
-                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
 
     def assert_program_cli(self, args: List[str], exitcode: ExitCode,
                            stdout_check: Optional[str] = None, stderr_check: Optional[str] = None):
@@ -122,8 +118,11 @@ class TestMain(unittest.TestCase):
         :param stdout_check: String with which `stdout` should be compared, `None` if `stdout` should not be empty.
         :param stderr_check: String with which `stderr` should be compared, `None` if `stderr` should not be empty.
         """
-        cli = self.execute_cli(args)
-        if stderr_check is not None:
+
+        cli = subprocess.run(args, timeout=self.TIMEOUT, cwd=self.SCRIPT_DIR,
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        if stderr_check is not None:  # check stderr first, assertion fails with unexpected errors in stderr
+
             self.assertEqual(stderr_check, cli.stderr)
         else:
             self.assertNotEqual('', cli.stderr)
@@ -176,6 +175,8 @@ class TestMain(unittest.TestCase):
     def assert_program_success(self, args: List[str]):
         self.assert_program(args, ExitCode.EX_OK, stdout_check=None, stderr_check='')
 
+
+class TestMain(TestMainBase):
     def test_arguments_error(self):
         """invalid arguments"""
         self.assert_program_error([self.SCRIPT], ExitCode.ARGUMENTS)
@@ -229,6 +230,10 @@ class TestMain(unittest.TestCase):
         with TemporaryDirectory() as tmpdir:
             non_existing_filepath = os.path.join(tmpdir, '__this_file_does_not_exist__')
             self.assert_program_error([self.SCRIPT, '-g',
+                                       '-e', non_existing_filepath,
+                                       '-m', non_existing_filepath,
+                                       '-s', non_existing_filepath], ExitCode.EX_NOINPUT)
+            self.assert_program_error([self.SCRIPT, '-ll', 'debug', '-g',
                                        '-e', non_existing_filepath,
                                        '-m', non_existing_filepath,
                                        '-s', non_existing_filepath], ExitCode.EX_NOINPUT)

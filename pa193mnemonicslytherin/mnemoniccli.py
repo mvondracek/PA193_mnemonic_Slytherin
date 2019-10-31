@@ -139,6 +139,7 @@ class Config(object):
         :rtype: argparse.ArgumentParser
         :return: initialized parser
         """
+
         def valid_password(password):
             if len(password) > MAX_SEED_PASSWORD_LENGTH:
                 raise argparse.ArgumentTypeError("password is longer than {} characters".format(
@@ -150,6 +151,7 @@ class Config(object):
             except UnicodeError as e:
                 raise argparse.ArgumentTypeError("password is not valid UTF-8: {}".format(e)) from e
             return password
+
         parser = argparse.ArgumentParser(
             prog=cls.PROGRAM_NAME,
             description=cls.PROGRAM_DESCRIPTION,
@@ -405,7 +407,3 @@ def main(argv) -> ExitCode:
 
     logger.debug('exit code: {} {}'.format(exitcode.name, exitcode.value))
     return exitcode
-
-
-if __name__ == '__main__':
-    cli_entry_point()
