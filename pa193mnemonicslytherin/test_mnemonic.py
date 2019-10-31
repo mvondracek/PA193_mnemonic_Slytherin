@@ -10,15 +10,18 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 2019
 """
 import io
+import string
 from binascii import unhexlify
 from contextlib import closing
+from random import getrandbits, choice, randrange
 from typing import BinaryIO, List, Any
 from unittest import TestCase
 from unittest.mock import patch
 
 import pkg_resources
 
-from pa193mnemonicslytherin.mnemonic import Entropy, Mnemonic, Seed, _DictionaryAccess, ENGLISH_DICTIONARY_NAME
+from pa193mnemonicslytherin.mnemonic import Entropy, Mnemonic, Seed, _DictionaryAccess, ENGLISH_DICTIONARY_NAME, \
+    MAX_SEED_PASSWORD_LENGTH
 from pa193mnemonicslytherin.mnemonic import generate, recover, verify
 
 # Test vectors by Trezor. Organized as entropy, mnemonic, seed, xprv
@@ -180,6 +183,19 @@ VALID_ENTROPY_TREZOR = Entropy(unhexlify(TREZOR_TEST_VECTORS['english'][0][0]))
 VALID_SEED_TREZOR = Seed(unhexlify(TREZOR_TEST_VECTORS['english'][0][2]))
 VALID_SEED_HEX_TREZOR = TREZOR_TEST_VECTORS['english'][0][2]
 VALID_PASSWORD_TREZOR = TREZOR_PASSWORD
+
+
+def get_random_valid_mnemonic_phrase():
+    return str(Entropy(get_random_valid_entropy_bytes()).to_mnemonic())
+
+
+def get_random_valid_entropy_bytes():
+    return bytes(getrandbits(8) for _ in range(choice(Entropy.VALID_ENTROPY_BYTE_LENGTHS)))
+
+
+def get_random_valid_password():
+    """NOTE: Generates only ASCII passwords."""
+    return ''.join(choice(string.ascii_lowercase) for _ in range(randrange(MAX_SEED_PASSWORD_LENGTH)))
 
 
 def extract_checksum(mnemonic_phrase: str, dictionary_name: str = ENGLISH_DICTIONARY_NAME) -> int:
@@ -525,14 +541,14 @@ class TestSeed(TestCase):
 
     def test___init___invalid_argument(self):
         # noinspection SpellCheckingInspection
-        test_cases_type = [None, '', '1234567890abcd', 'NonHexaString_!?', [b'']]
+        test_cases_type = [None, '', '1234567890abcd', 'NonHexaString_!?', 0, 123, [b'']]
         for test in test_cases_type:
             with self.assertRaises(TypeError):
                 # noinspection PyTypeChecker
                 Seed(test)  # type: ignore
 
         test_cases_value = [b'', b'tooShort', b'63bytesLongSoExactlyOneByteShortOfBeingValidSoCloseYetSoFarSAD!',
-                            b'soLongItHurtsHurDurBlaBlaButAnywayThisShouldFail123456789101112131415', 0, 123,
+                            b'soLongItHurtsHurDurBlaBlaButAnywayThisShouldFail123456789101112131415',
                             unhexlify(TREZOR_TEST_VECTORS['english'][0][2]) + b'almost_ok']
         for test in test_cases_value:
             with self.assertRaises(ValueError):
@@ -564,14 +580,14 @@ class TestEntropy(TestCase):
 
     def test___init___invalid_argument(self):
         # noinspection SpellCheckingInspection
-        test_cases_type = [None, '', '1234567890abcd', 'NonHexaString_!?', [b'']]
+        test_cases_type = [None, '', '1234567890abcd', 'NonHexaString_!?', 0, 123, [b'']]
         for test in test_cases_type:
             with self.assertRaises(TypeError):
                 # noinspection PyTypeChecker
                 Entropy(test)  # type: ignore
 
         test_cases_value = [b'', b'tooShort', b'Well26BytesIsNotGonnaCutIT', b'Not15neitherLol',
-                            b'soLongItHurtsHurDurBlaBlaButAnywayThisShouldFail123456789101112131415', 0, 123,
+                            b'soLongItHurtsHurDurBlaBlaButAnywayThisShouldFail123456789101112131415',
                             unhexlify(TREZOR_TEST_VECTORS['english'][0][2]) + b'almost_ok']
         for test in test_cases_value:
             with self.assertRaises(ValueError):
