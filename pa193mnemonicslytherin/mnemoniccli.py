@@ -52,10 +52,10 @@ class ExitCode(Enum):
     EX_NOINPUT = 66
     """An input file (not a system file) did not exist or was not readable."""
 
-    EX_UNAVAILABLE = 69
+    EX_UNAVAILABLE = 69  # TODO not used, now
     """Required program or file does not exist."""
 
-    EX_NOPERM = 77
+    EX_NOPERM = 77  # TODO not used, now
     """Permission denied."""
 
     SEEDS_DO_NOT_MATCH = 125
@@ -63,6 +63,22 @@ class ExitCode(Enum):
 
     KEYBOARD_INTERRUPT = 130
     """Program received SIGINT."""
+
+
+class Pa193MnemonicSlytherinError(Exception):
+    pass
+
+
+class ExitError(Pa193MnemonicSlytherinError):
+    EXIT_CODE = ExitCode.UNKNOWN_FAILURE
+
+
+class InputDataError(ExitError):
+    EXIT_CODE = ExitCode.EX_DATAERR
+
+
+class NoInputError(ExitError):
+    EXIT_CODE = ExitCode.EX_NOINPUT
 
 
 class Config(object):
@@ -249,30 +265,26 @@ def cli_entry_point(argv=sys.argv):
 
 
 def action_generate(config: Config) -> ExitCode:
+    """
+    :raises InputDataError: The input data was incorrect in some way.
+    :raises NoInputError: An input file (not a system file) did not exist or was not readable.
+    """
     try:
         with open(config.entropy_filepath, config.format.read_mode, encoding=config.format.encoding) as file:
             entropy = file.read()  # type: typing.Union[bytes, str]
     except FileNotFoundError as e:
-        logger.critical(str(e))
-        print(str(e), file=sys.stderr)
-        return ExitCode.EX_NOINPUT
+        raise NoInputError(str(e)) from e
     except UnicodeError as e:
-        logger.critical(str(e))
-        print(str(e), file=sys.stderr)
-        return ExitCode.EX_DATAERR
+        raise InputDataError(str(e)) from e
     if config.format is Config.Format.TEXT_HEXADECIMAL:
         try:
             entropy = unhexlify(entropy)  # type: bytes
         except (Error, ValueError) as e:
-            logger.critical(str(e))
-            print(str(e), file=sys.stderr)
-            return ExitCode.EX_DATAERR
+            raise InputDataError(str(e)) from e
     try:
         entropy = Entropy(entropy)
     except ValueError as e:
-        logger.critical(str(e))
-        print(str(e), file=sys.stderr)
-        return ExitCode.EX_DATAERR
+        raise InputDataError(str(e)) from e
     mnemonic, seed = generate(entropy, config.password)
     with open(config.mnemonic_filepath, 'w', encoding='utf-8') as file:
         file.write(mnemonic)
@@ -287,23 +299,21 @@ def action_generate(config: Config) -> ExitCode:
 
 
 def action_recover(config: Config) -> ExitCode:
+    """
+    :raises InputDataError: The input data was incorrect in some way.
+    :raises NoInputError: An input file (not a system file) did not exist or was not readable.
+    """
     try:
         with open(config.mnemonic_filepath, 'r', encoding='utf-8') as file:
             mnemonic = file.read()  # type: str
     except FileNotFoundError as e:
-        logger.critical(str(e))
-        print(str(e), file=sys.stderr)
-        return ExitCode.EX_NOINPUT
+        raise NoInputError(str(e)) from e
     except UnicodeError as e:
-        logger.critical(str(e))
-        print(str(e), file=sys.stderr)
-        return ExitCode.EX_DATAERR
+        raise InputDataError(str(e)) from e
     try:
         mnemonic = Mnemonic(mnemonic)
     except ValueError as e:
-        logger.critical(str(e))
-        print(str(e), file=sys.stderr)
-        return ExitCode.EX_DATAERR
+        raise InputDataError(str(e)) from e
     entropy, seed = recover(mnemonic, config.password)
     with open(config.entropy_filepath, config.format.write_mode, encoding=config.format.encoding) as file:
         if config.format is Config.Format.TEXT_HEXADECIMAL:
@@ -320,47 +330,37 @@ def action_recover(config: Config) -> ExitCode:
 
 
 def action_verify(config: Config) -> ExitCode:
+    """
+    :raises InputDataError: The input data was incorrect in some way.
+    :raises NoInputError: An input file (not a system file) did not exist or was not readable.
+    """
     try:
         with open(config.mnemonic_filepath, 'r', encoding='utf-8') as file:
             mnemonic = file.read()  # type: str
     except FileNotFoundError as e:
-        logger.critical(str(e))
-        print(str(e), file=sys.stderr)
-        return ExitCode.EX_NOINPUT
+        raise NoInputError(str(e)) from e
     except UnicodeError as e:
-        logger.critical(str(e))
-        print(str(e), file=sys.stderr)
-        return ExitCode.EX_DATAERR
+        raise InputDataError(str(e)) from e
     try:
         mnemonic = Mnemonic(mnemonic)
     except ValueError as e:
-        logger.critical(str(e))
-        print(str(e), file=sys.stderr)
-        return ExitCode.EX_DATAERR
+        raise InputDataError(str(e)) from e
     try:
         with open(config.seed_filepath, config.format.read_mode, encoding=config.format.encoding) as file:
             seed = file.read()  # type: typing.Union[bytes, str]
     except FileNotFoundError as e:
-        logger.critical(str(e))
-        print(str(e), file=sys.stderr)
-        return ExitCode.EX_NOINPUT
+        raise NoInputError(str(e)) from e
     except UnicodeError as e:
-        logger.critical(str(e))
-        print(str(e), file=sys.stderr)
-        return ExitCode.EX_DATAERR
+        raise InputDataError(str(e)) from e
     if config.format is Config.Format.TEXT_HEXADECIMAL:
         try:
             seed = unhexlify(seed)  # type: bytes
         except (Error, ValueError) as e:
-            logger.critical(str(e))
-            print(str(e), file=sys.stderr)
-            return ExitCode.EX_DATAERR
+            raise InputDataError(str(e)) from e
     try:
         seed = Seed(seed)
     except ValueError as e:
-        logger.critical(str(e))
-        print(str(e), file=sys.stderr)
-        return ExitCode.EX_DATAERR
+        raise InputDataError(str(e)) from e
     match = verify(mnemonic, seed, config.password)
     if not match:
         msg = 'Seeds do not match.'
@@ -390,12 +390,17 @@ def main(argv) -> ExitCode:
 
     # region #
     exitcode = ExitCode.EX_OK
-    if config.generate:
-        exitcode = action_generate(config)
-    elif config.recover:
-        exitcode = action_recover(config)
-    elif config.verify:
-        exitcode = action_verify(config)
+    try:
+        if config.generate:
+            exitcode = action_generate(config)
+        elif config.recover:
+            exitcode = action_recover(config)
+        elif config.verify:
+            exitcode = action_verify(config)
+    except ExitError as e:
+        logger.critical(str(e))
+        print(str(e), file=sys.stderr)
+        return e.EXIT_CODE
     # endregion
 
     logger.debug('exit code: {} {}'.format(exitcode.name, exitcode.value))
