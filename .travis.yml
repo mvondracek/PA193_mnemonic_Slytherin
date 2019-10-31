@@ -1,0 +1,38 @@
+version: ~> 1.0
+os: linux
+language: python
+env:
+  - TEST_SUITE='doctest'
+  - TEST_SUITE='unit'
+  - TEST_SUITE='integration'
+  - TEST_SUITE='reference'
+python:
+  - "3.5"
+  - "3.6"
+  - "3.7"
+install:
+  - pip install coveralls
+  - pip install .
+  - ./test-reference/install.sh
+script:
+  - |
+    case ${TEST_SUITE} in
+    doctest)
+      python -m unittest pa193mnemonicslytherin.test_doctest ;
+    ;;
+    unit)
+      python -m unittest pa193mnemonicslytherin/test_mnemonic.py ;
+    ;;
+    integration)
+      python -m unittest pa193mnemonicslytherin/test_mnemoniccli.py ;
+    ;;
+    reference)
+      python -m unittest discover -s ./test-reference ;
+    ;;
+    *)
+      echo "Error: unknown TEST_SUITE in Travis CI config" 1>&2 ; false ;
+    ;;
+    esac
+after_success:
+  - coverage run --source=pa193mnemonicslytherin setup.py test
+  - coveralls
