@@ -11,8 +11,10 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 """
 import doctest
 import io
+import string
 from binascii import unhexlify
 from contextlib import closing
+from random import getrandbits, choice, randrange
 from typing import BinaryIO, List, Any
 from unittest import TestCase
 from unittest.mock import patch
@@ -20,7 +22,8 @@ from unittest.mock import patch
 import pkg_resources
 
 import pa193mnemonicslytherin.mnemonic
-from pa193mnemonicslytherin.mnemonic import Entropy, Mnemonic, Seed, _DictionaryAccess, ENGLISH_DICTIONARY_NAME
+from pa193mnemonicslytherin.mnemonic import Entropy, Mnemonic, Seed, _DictionaryAccess, ENGLISH_DICTIONARY_NAME, \
+    MAX_SEED_PASSWORD_LENGTH
 from pa193mnemonicslytherin.mnemonic import generate, recover, verify
 
 # Test vectors by Trezor. Organized as entropy, mnemonic, seed, xprv
@@ -182,6 +185,19 @@ VALID_ENTROPY_TREZOR = Entropy(unhexlify(TREZOR_TEST_VECTORS['english'][0][0]))
 VALID_SEED_TREZOR = Seed(unhexlify(TREZOR_TEST_VECTORS['english'][0][2]))
 VALID_SEED_HEX_TREZOR = TREZOR_TEST_VECTORS['english'][0][2]
 VALID_PASSWORD_TREZOR = TREZOR_PASSWORD
+
+
+def get_random_valid_mnemonic_phrase():
+    return str(Entropy(get_random_valid_entropy_bytes()).to_mnemonic())
+
+
+def get_random_valid_entropy_bytes():
+    return bytes(getrandbits(8) for _ in range(choice(Entropy.VALID_ENTROPY_BYTE_LENGTHS)))
+
+
+def get_random_valid_password():
+    """NOTE: Generates only ASCII passwords."""
+    return ''.join(choice(string.ascii_lowercase) for i in range(randrange(MAX_SEED_PASSWORD_LENGTH)))
 
 
 def extract_checksum(mnemonic_phrase: str, dictionary_name: str = ENGLISH_DICTIONARY_NAME) -> int:

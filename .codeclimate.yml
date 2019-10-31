@@ -10,6 +10,8 @@ plugins:
     enabled: true
   radon:
     enabled: true
+  shellcheck:
+    enabled: true
   sonar-python:
     enabled: true
     config:

@@ -202,6 +202,7 @@ class Seed(bytes):
 
 class Entropy(bytes, _DictionaryAccess):
     """Entropy representation, validation, and transformation to Mnemonic."""
+    VALID_ENTROPY_BYTE_LENGTHS = (16, 20, 24, 28, 32)
 
     def __init__(self, entropy: bytes) -> None:
         # noinspection PyTypeChecker
@@ -237,10 +238,9 @@ class Entropy(bytes, _DictionaryAccess):
         """
         if not isinstance(entropy, bytes):
             raise TypeError('argument `entropy` should be bytes, not {}'.format(type(entropy).__name__))
-        valid_entropy_lengths = (16, 20, 24, 28, 32)
-        if len(entropy) not in valid_entropy_lengths:
+        if len(entropy) not in self.VALID_ENTROPY_BYTE_LENGTHS:
             raise ValueError('length of argument `entropy` should be one of {}, not {}'.format(
-                valid_entropy_lengths, len(entropy)))
+                self.VALID_ENTROPY_BYTE_LENGTHS, len(entropy)))
         super().__init__()
         _DictionaryAccess.__init__(self)
         self.__mnemonic = None  # type: Optional[Mnemonic]
