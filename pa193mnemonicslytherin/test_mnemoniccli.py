@@ -113,7 +113,6 @@ def get_invalid_passwords() -> List[Tuple[str, Optional[str]]]:
     psw_non_utf8 = "icpa\u202e\U000e0ec1\udcaassword1"
     invalid_passwords = [(psw_non_utf8, None)]
     # Cases: invalid UTF-8 sequences, too long passwords
-    # TODO: long passwords raise argparse.ArgumentTypeError, need separate test
     return invalid_passwords
 
 
