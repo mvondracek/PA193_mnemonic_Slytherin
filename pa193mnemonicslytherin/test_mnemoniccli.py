@@ -73,9 +73,7 @@ def get_invalid_mnemonics_invalid_utf8() -> List[Tuple[bytes, Optional[str]]]:
     """
     :return: non-Unicode mnemonics as byte string, which should be written to file in a binary mode
     """
-    words = [b"\xff\xff\xff\xff"] * 12
-    mnemonic = b'\x20'.join(words)
-    non_unicode_mnemonics = [(mnemonic, None)]
+    non_unicode_mnemonics = [(b"\xff\xff\xff\xff " * 12, None)]
     return non_unicode_mnemonics
 
 
