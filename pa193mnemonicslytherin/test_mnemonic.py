@@ -197,7 +197,7 @@ def get_random_valid_entropy_bytes():
 
 def get_random_valid_password():
     """NOTE: Generates only ASCII passwords."""
-    return ''.join(choice(string.ascii_lowercase) for i in range(randrange(MAX_SEED_PASSWORD_LENGTH)))
+    return ''.join(choice(string.ascii_lowercase) for _ in range(randrange(MAX_SEED_PASSWORD_LENGTH)))
 
 
 def extract_checksum(mnemonic_phrase: str, dictionary_name: str = ENGLISH_DICTIONARY_NAME) -> int:
