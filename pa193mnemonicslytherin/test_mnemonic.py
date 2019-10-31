@@ -9,7 +9,6 @@ Team Slytherin: @sobuch, @lsolodkova, @mvondracek.
 
 2019
 """
-import doctest
 import io
 import string
 from binascii import unhexlify
@@ -21,7 +20,6 @@ from unittest.mock import patch
 
 import pkg_resources
 
-import pa193mnemonicslytherin.mnemonic
 from pa193mnemonicslytherin.mnemonic import Entropy, Mnemonic, Seed, _DictionaryAccess, ENGLISH_DICTIONARY_NAME, \
     MAX_SEED_PASSWORD_LENGTH
 from pa193mnemonicslytherin.mnemonic import generate, recover, verify
@@ -669,9 +667,3 @@ class Test_DictionaryAccess(TestCase):
             with patch.object(pkg_resources, 'resource_stream', return_value=dictionary_mock):
                 with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
                     _DictionaryAccess()
-
-
-# noinspection PyUnusedLocal
-def load_tests(loader, tests, ignore):
-    tests.addTests(doctest.DocTestSuite(pa193mnemonicslytherin.mnemonic))
-    return tests

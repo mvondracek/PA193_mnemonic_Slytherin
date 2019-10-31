@@ -5,6 +5,7 @@ python:
   - "3.6"
   - "3.7"
 env:
+  - TEST_SUITE='doctest'
   - TEST_SUITE='unit'
   - TEST_SUITE='integration'
   - TEST_SUITE='reference'
@@ -15,6 +16,9 @@ install:
 script:
   - |
     case ${TEST_SUITE} in
+    doctest)
+      python -m unittest pa193mnemonicslytherin.test_doctest ;
+    ;;
     unit)
       python -m unittest pa193mnemonicslytherin/test_mnemonic.py ;
     ;;
