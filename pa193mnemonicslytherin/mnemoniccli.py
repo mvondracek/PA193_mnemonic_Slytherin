@@ -274,7 +274,7 @@ def action_generate(config: Config) -> ExitCode:
         logger.critical(str(e))
         print(str(e), file=sys.stderr)
         return ExitCode.EX_DATAERR
-        mnemonic, seed = generate(entropy, config.password)
+    mnemonic, seed = generate(entropy, config.password)
     with open(config.mnemonic_filepath, 'w', encoding='utf-8') as file:
         file.write(mnemonic)
     logger.info('Mnemonic written to {}.'.format(config.mnemonic_filepath))
@@ -306,7 +306,7 @@ def action_recover(config: Config) -> ExitCode:
         logger.critical(str(e))
         print(str(e), file=sys.stderr)
         return ExitCode.EX_DATAERR
-        entropy, seed = recover(mnemonic, config.password)
+    entropy, seed = recover(mnemonic, config.password)
     with open(config.entropy_filepath, config.format.write_mode, encoding=config.format.encoding) as file:
         if config.format is Config.Format.TEXT_HEXADECIMAL:
             entropy = str(hexlify(entropy), 'ascii')
@@ -365,7 +365,7 @@ def action_verify(config: Config) -> ExitCode:
         logger.critical(str(e))
         print(str(e), file=sys.stderr)
         return ExitCode.EX_DATAERR
-        match = verify(mnemonic, seed, config.password)
+    match = verify(mnemonic, seed, config.password)
     if not match:
         msg = 'Seeds do not match.'
         logger.info(msg)
