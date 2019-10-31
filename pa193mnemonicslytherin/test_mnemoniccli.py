@@ -110,9 +110,8 @@ def get_invalid_passwords_invalid_utf8() -> List[Tuple[str, Optional[str]]]:
              and second is optional error message to be checked on
              program's stderr.
     """
-    psw_non_utf8 = "icpa\u202e\U000e0ec1\udcaassword1"
-    invalid_passwords = [(psw_non_utf8, None)]
-    # Cases: invalid UTF-8 sequences, too long passwords
+    # noinspection SpellCheckingInspection
+    invalid_passwords = [("icpa\u202e\U000e0ec1\udcaassword1", None)]
     return invalid_passwords
 
 
