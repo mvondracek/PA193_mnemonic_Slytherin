@@ -370,7 +370,3 @@ def main(argv) -> ExitCode:
 
     logger.debug('exit code: {} {}'.format(exitcode.name, exitcode.value))
     return exitcode
-
-
-if __name__ == '__main__':
-    cli_entry_point()
