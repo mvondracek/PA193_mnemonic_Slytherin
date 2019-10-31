@@ -249,7 +249,6 @@ def cli_entry_point(argv=sys.argv):
 
 
 def action_generate(config: Config) -> ExitCode:
-    # TODO Check file size before reading?
     try:
         with open(config.entropy_filepath, config.format.read_mode, encoding=config.format.encoding) as file:
             entropy = file.read()  # type: typing.Union[bytes, str]
@@ -288,7 +287,6 @@ def action_generate(config: Config) -> ExitCode:
 
 
 def action_recover(config: Config) -> ExitCode:
-    # TODO Check file size before reading?
     try:
         with open(config.mnemonic_filepath, 'r', encoding='utf-8') as file:
             mnemonic = file.read()  # type: str
@@ -322,7 +320,6 @@ def action_recover(config: Config) -> ExitCode:
 
 
 def action_verify(config: Config) -> ExitCode:
-    # TODO Check file size before reading?
     try:
         with open(config.mnemonic_filepath, 'r', encoding='utf-8') as file:
             mnemonic = file.read()  # type: str
@@ -340,7 +337,6 @@ def action_verify(config: Config) -> ExitCode:
         logger.critical(str(e))
         print(str(e), file=sys.stderr)
         return ExitCode.EX_DATAERR
-    # TODO Check file size before reading?
     try:
         with open(config.seed_filepath, config.format.read_mode, encoding=config.format.encoding) as file:
             seed = file.read()  # type: typing.Union[bytes, str]
@@ -378,7 +374,6 @@ def action_verify(config: Config) -> ExitCode:
 
 
 def main(argv) -> ExitCode:
-    # TODO check for errors related to file IO
     logging.captureWarnings(True)
     warnings.simplefilter('always', ResourceWarning)
 
