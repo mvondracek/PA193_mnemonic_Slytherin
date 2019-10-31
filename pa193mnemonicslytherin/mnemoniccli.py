@@ -25,7 +25,7 @@ from pa193mnemonicslytherin import Entropy, Mnemonic, Seed
 from pa193mnemonicslytherin import generate, recover, verify
 from pa193mnemonicslytherin.mnemonic import MAX_SEED_PASSWORD_LENGTH
 
-__version__ = '0.1.0'
+__version__ = '1.0.0'
 __author__ = 'Team Slytherin: @sobuch, @lsolodkova, @mvondracek.'
 
 logger = logging.getLogger(__name__)

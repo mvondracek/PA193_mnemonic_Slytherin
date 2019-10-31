@@ -26,8 +26,8 @@ command -v sphinx-apidoc >/dev/null 2>&1 || {
 
 project="pa193mnemonicslytherin - BIP39 Mnemonic Phrase Generator and Verifier"
 author="Team Slytherin: @sobuch, @lsolodkova, @mvondracek."
-version="0.1"
-release="0.1.0"
+version="1.0"
+release="1.0.0"
 
 sphinx-apidoc --force --module-first --no-toc \
 -H "${project}" -A "${author}" -V "${version}" -R "${release}" \

@@ -24,7 +24,7 @@ def readme():
 
 setup(
     name='pa193mnemonicslytherin',
-    version='0.1.0',
+    version='1.0.0',
     description='BIP39 Mnemonic Phrase Generator and Verifier',
     long_description=readme(),
     long_description_content_type='text/markdown',
