@@ -45,7 +45,7 @@ def get_invalid_entropies() -> List[Tuple[Union[str, bytes], Config.Format, Opti
             invalid_entropies.append((str(hexlify(entropy_byte * entropy_bytes_length), 'ascii'),
                                       Config.Format.TEXT_HEXADECIMAL, None))
     # endregion
-    # TODO invalid characters in hex string
+
     # Cases: non-Unicode, non-ascii, non-hex, odd-length
     # odd-length should be covered by the previous region?
     # for non-UTF-8 be a separate test function
@@ -64,8 +64,7 @@ def get_invalid_mnemonics() -> List[Tuple[str, Optional[str]]]:
              and second is optional error message to be checked on
              program's stderr.
     """
-    invalid_mnemonics = [('this is invalid mnemonic', None)]  # TODO gather invalid mnemonics from tests
-    # TODO invalid UTF-8 sequences
+    invalid_mnemonics = [('this is invalid mnemonic', None)]
     return invalid_mnemonics
 
 
@@ -92,9 +91,7 @@ def get_invalid_seeds() -> List[Tuple[Union[str, bytes], Config.Format, Optional
             invalid_seeds.append((str(hexlify(seed_byte * seed_bytes_length), 'ascii'),
                                   Config.Format.TEXT_HEXADECIMAL, None))
     # endregion
-    # TODO invalid characters in hex string
-    # Cases: non-Unicode, non-ASCII, non-hex
-    # non-Unicode test be in a separate function
+    # Cases: non-ASCII, non-hex
     seed_non_ascii = "Ы" * SEED_LEN
     seed_non_hex = "Z" * SEED_LEN
     invalid_seeds.extend([(seed_non_ascii, Config.Format.TEXT_HEXADECIMAL, None),

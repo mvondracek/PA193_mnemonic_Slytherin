@@ -341,7 +341,6 @@ class TestPublicFunctions(TestCase):
     """Tests for public functions of mnemonic module.
     Tests for `generate`, `recover`, and `verify` are similar, but we want to
     test each function separately.
-    TODO add testing for incorrect inputs
     """
     TESTING_TYPES = [
         None,
@@ -430,7 +429,6 @@ class TestPublicFunctions(TestCase):
             verify(VALID_MNEMONIC_TREZOR, VALID_SEED_TREZOR, INVALID_PASSWORD_INVALID_UTF8)
 
 
-# TODO add more tests (different from Trezor vector)
 class TestMnemonic(TestCase):
     """Tests Mnemonic"""
 

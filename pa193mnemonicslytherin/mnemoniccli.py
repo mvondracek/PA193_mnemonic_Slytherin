@@ -393,7 +393,7 @@ def main(argv) -> ExitCode:
         logging.disable(logging.CRITICAL)
     logger.debug('Config parsed from args.')
 
-    # region # TODO What types of errors/exceptions can happen here?
+    # region #
     exitcode = ExitCode.EX_OK
     if config.generate:
         exitcode = action_generate(config)
