@@ -38,6 +38,9 @@ setup(
     package_data={
         'pa193mnemonicslytherin': ['*.lst'],
     },
+    install_requires=[
+        'sphinx',
+    ],
     tests_require=[
         'coverage',
     ],
