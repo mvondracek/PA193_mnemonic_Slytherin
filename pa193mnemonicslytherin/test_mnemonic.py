@@ -302,7 +302,7 @@ class TestInternalTestHelpers(TestCase):
                                             r'current dictionary'):
                     extract_checksum(test_input)
 
-    def test_extract_checksum_non_utf8_mnemonic(self):
+    def test_extract_checksum_invalid_mnemonic_invalid_utf8(self):
         with self.assertRaises(UnicodeError):
             extract_checksum(INVALID_MNEMONIC_PHRASE_INVALID_UTF8)
 
@@ -373,7 +373,7 @@ class TestPublicFunctions(TestCase):
         with self.assertRaises(ValueError):
             generate(VALID_ENTROPY_TREZOR, password)
 
-    def test_generate_invalid_encoding(self):
+    def test_generate_invalid_password_invalid_utf8(self):
         with self.assertRaises(UnicodeError):
             generate(VALID_ENTROPY_TREZOR, INVALID_PASSWORD_INVALID_UTF8)
 
@@ -398,7 +398,7 @@ class TestPublicFunctions(TestCase):
         with self.assertRaises(ValueError):
             recover(VALID_MNEMONIC_TREZOR, password)
 
-    def test_recover_invalid_encoding(self):
+    def test_recover_invalid_password_invalid_utf8(self):
         with self.assertRaises(UnicodeError):
             recover(VALID_MNEMONIC_TREZOR, INVALID_PASSWORD_INVALID_UTF8)
 
@@ -425,7 +425,7 @@ class TestPublicFunctions(TestCase):
         with self.assertRaises(ValueError):
             verify(VALID_MNEMONIC_TREZOR, VALID_SEED_TREZOR, password)
 
-    def test_verify_invalid_encoding(self):
+    def test_verify_invalid_password_invalid_utf8(self):
         with self.assertRaises(UnicodeError):
             verify(VALID_MNEMONIC_TREZOR, VALID_SEED_TREZOR, INVALID_PASSWORD_INVALID_UTF8)
 
@@ -489,7 +489,7 @@ class TestMnemonic(TestCase):
         with self.assertRaises(ValueError):
             Mnemonic('a' * 1024 * 1024)  # 1 MB
 
-    def test___init___invalid_encoding(self):
+    def test___init___invalid_utf8(self):
         """Input string isn't UTF-8 encoded."""
         with self.assertRaises(UnicodeError):
             Mnemonic(INVALID_MNEMONIC_PHRASE_INVALID_UTF8)
@@ -513,7 +513,7 @@ class TestMnemonic(TestCase):
         with self.assertRaises(ValueError):
             VALID_MNEMONIC_TREZOR.to_seed(password)
 
-    def test_to_seed_password_invalid_encoding(self):
+    def test_to_seed_invalid_password_invalid_utf8(self):
         with self.assertRaises(UnicodeError):
             VALID_MNEMONIC_TREZOR.to_seed(INVALID_PASSWORD_INVALID_UTF8)
 
