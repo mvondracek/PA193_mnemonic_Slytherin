@@ -286,7 +286,7 @@ class TestMain(unittest.TestCase):
                                         stdout_check='',
                                         stderr_check=stderr)
 
-    def test_generate_non_unicode_entropy(self):
+    def test_generate_invalid_entropy_invalid_utf8(self):
         entropy = b'\x86' * 16
         with TemporaryDirectory() as tmpdir:
             seed_path = os.path.join(tmpdir, '__seed__')
@@ -347,7 +347,7 @@ class TestMain(unittest.TestCase):
                                         stdout_check='',
                                         stderr_check=stderr)
 
-    def test_recover_non_unicode_mnemonic(self):
+    def test_recover_invalid_mnemonic_invalid_utf8(self):
         with TemporaryDirectory() as tmpdir:
             for mnemonic, stderr in get_invalid_mnemonics_invalid_utf8():
                 with self.subTest(mnemonic=mnemonic):
@@ -425,7 +425,7 @@ class TestMain(unittest.TestCase):
                                             stdout_check='',
                                             stderr_check=stderr)
 
-    def test_verify_non_unicode_mnemonic(self):
+    def test_verify_invalid_mnemonic_invalid_utf8(self):
         valid_seeds = [
             (unhexlify(VALID_SEED_HEX_TREZOR), Config.Format.BINARY),
             (VALID_SEED_HEX_TREZOR, Config.Format.TEXT_HEXADECIMAL),
