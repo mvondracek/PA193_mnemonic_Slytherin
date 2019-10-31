@@ -15,6 +15,7 @@ from binascii import unhexlify
 from contextlib import closing
 from random import getrandbits, choice, randrange
 from typing import BinaryIO, List, Any
+from unicodedata import normalize
 from unittest import TestCase
 from unittest.mock import patch
 
@@ -184,6 +185,8 @@ VALID_SEED_TREZOR = Seed(unhexlify(TREZOR_TEST_VECTORS['english'][0][2]))
 VALID_SEED_HEX_TREZOR = TREZOR_TEST_VECTORS['english'][0][2]
 VALID_PASSWORD_TREZOR = TREZOR_PASSWORD
 
+INVALID_MNEMONIC_PHRASE_INVALID_UTF8 = "mn3\n\udcd6 " * 12
+INVALID_PASSWORD_INVALID_UTF8 = "icpa\u202e\U000e0ec1\udcaassword1"
 
 def get_random_valid_mnemonic_phrase():
     return str(Entropy(get_random_valid_entropy_bytes()).to_mnemonic())
@@ -204,10 +207,11 @@ def extract_checksum(mnemonic_phrase: str, dictionary_name: str = ENGLISH_DICTIO
     :raises PermissionError: If dictionary could not be retrieved due to denied permission.  # TODO test this
     :raises ValueError: Cannot instantiate dictionary  # TODO more descriptive message 1)
     :raises ValueError: Cannot instantiate dictionary  # TODO more descriptive message 2)
-    :raises TypeError: `mnemonic_phrase` is not instance of `str`.
+    :raises TypeError: `mnemonic_phrase` is not an instance of `str`.
     :raises ValueError: `mnemonic_phrase` has invalid number of words, expected one of (12, 15, 18, 21, 24).
     :raises ValueError: `mnemonic_phrase` contains word which is not in current dictionary.
     :raises UnicodeError: If dictionary contains invalid unicode sequences.  # TODO test this
+    :raises UnicodeError: `mnemonic_phrase` isn't a valid UTF-8 string
     """
     if not isinstance(dictionary_name, str):
         raise TypeError('argument `dictionary_name` should be str, not {}'.format(
@@ -245,6 +249,10 @@ def extract_checksum(mnemonic_phrase: str, dictionary_name: str = ENGLISH_DICTIO
     # region TODO copied from Mnemonic.__init__
     if not isinstance(mnemonic_phrase, str):
         raise TypeError('argument `mnemonic_phrase` should be str, not {}'.format(type(mnemonic_phrase).__name__))
+
+    # to raise UnicodeError for invalid UTF-8
+    mnemonic_phrase.encode('utf-8')
+    mnemonic_phrase = normalize('NFKD', mnemonic_phrase)
 
     words = mnemonic_phrase.split()
     n_words = len(words)
@@ -310,6 +318,10 @@ class TestInternalTestHelpers(TestCase):
                                             r'current dictionary'):
                     extract_checksum(test_input)
 
+    def test_extract_checksum_invalid_mnemonic_invalid_utf8(self):
+        with self.assertRaises(UnicodeError):
+            extract_checksum(INVALID_MNEMONIC_PHRASE_INVALID_UTF8)
+
     def test_extract_checksum_invalid_dictionary_name(self):
         for test_input in Test_DictionaryAccess.INVALID_DICTIONARY_NAMES:
             with self.assertRaisesRegex(TypeError, 'argument `dictionary_name` should be str'):
@@ -345,7 +357,6 @@ class TestPublicFunctions(TestCase):
     """Tests for public functions of mnemonic module.
     Tests for `generate`, `recover`, and `verify` are similar, but we want to
     test each function separately.
-    TODO add testing for incorrect inputs
     """
     TESTING_TYPES = [
         None,
@@ -377,6 +388,10 @@ class TestPublicFunctions(TestCase):
         with self.assertRaises(ValueError):
             generate(VALID_ENTROPY_TREZOR, password)
 
+    def test_generate_invalid_password_invalid_utf8(self):
+        with self.assertRaises(UnicodeError):
+            generate(VALID_ENTROPY_TREZOR, INVALID_PASSWORD_INVALID_UTF8)
+
     def test_recover(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             entropy, seed = recover(Mnemonic(test_vector[1]), TREZOR_PASSWORD)
@@ -397,6 +412,10 @@ class TestPublicFunctions(TestCase):
         password = 'a' * 1024 * 1024  # 1 MB
         with self.assertRaises(ValueError):
             recover(VALID_MNEMONIC_TREZOR, password)
+
+    def test_recover_invalid_password_invalid_utf8(self):
+        with self.assertRaises(UnicodeError):
+            recover(VALID_MNEMONIC_TREZOR, INVALID_PASSWORD_INVALID_UTF8)
 
     def test_verify(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
@@ -421,8 +440,11 @@ class TestPublicFunctions(TestCase):
         with self.assertRaises(ValueError):
             verify(VALID_MNEMONIC_TREZOR, VALID_SEED_TREZOR, password)
 
+    def test_verify_invalid_password_invalid_utf8(self):
+        with self.assertRaises(UnicodeError):
+            verify(VALID_MNEMONIC_TREZOR, VALID_SEED_TREZOR, INVALID_PASSWORD_INVALID_UTF8)
 
-# TODO add more tests (different from Trezor vector)
+
 class TestMnemonic(TestCase):
     """Tests Mnemonic"""
 
@@ -481,6 +503,11 @@ class TestMnemonic(TestCase):
         with self.assertRaises(ValueError):
             Mnemonic('a' * 1024 * 1024)  # 1 MB
 
+    def test___init___invalid_utf8(self):
+        """Input string isn't UTF-8 encoded."""
+        with self.assertRaises(UnicodeError):
+            Mnemonic(INVALID_MNEMONIC_PHRASE_INVALID_UTF8)
+
     def test_to_seed(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
             with self.subTest(mnemonic=test_vector[1]):
@@ -499,6 +526,10 @@ class TestMnemonic(TestCase):
         password = 'a' * 1024 * 1024  # 1 MB
         with self.assertRaises(ValueError):
             VALID_MNEMONIC_TREZOR.to_seed(password)
+
+    def test_to_seed_invalid_password_invalid_utf8(self):
+        with self.assertRaises(UnicodeError):
+            VALID_MNEMONIC_TREZOR.to_seed(INVALID_PASSWORD_INVALID_UTF8)
 
     def test_to_entropy(self):
         for test_vector in TREZOR_TEST_VECTORS['english']:
@@ -667,3 +698,10 @@ class Test_DictionaryAccess(TestCase):
             with patch.object(pkg_resources, 'resource_stream', return_value=dictionary_mock):
                 with self.assertRaisesRegex(ValueError, 'Cannot instantiate dictionary'):
                     _DictionaryAccess()
+
+    def test___init___invalid_dictionary_non_utf8(self):
+        dictionary_mock = io.BytesIO(
+            b'\xff\xff\xff\n' * self.VALID_DICTIONARY_LINE_COUNT)
+        with patch.object(pkg_resources, 'resource_stream', return_value=dictionary_mock):
+            with self.assertRaises(UnicodeError):
+                _DictionaryAccess()

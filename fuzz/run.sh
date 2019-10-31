@@ -18,27 +18,27 @@ while true
    radamsa test_seed_hex > seed_hex
 
    mnemoniccli -g -e entropy_hex -s seed -m mnemonic -ll debug &>out
-   if [[ $? != 0 && $? != 65 ]] ; then handle_fail ; cp entropy_hex "fail-${fails}" ; fi
+   if [[ $? != 0 && $? != 65 && $? != 2 ]] ; then handle_fail ; cp entropy_hex "fail-${fails}" ; fi
    mnemoniccli -g -e entropy_bin -s seed -m mnemonic -f bin -ll debug &>out
-   if [[ $? != 0 && $? != 65 ]] ; then handle_fail ; cp entropy_bin "fail-${fails}" ; fi
+   if [[ $? != 0 && $? != 65 && $? != 2 ]] ; then handle_fail ; cp entropy_bin "fail-${fails}" ; fi
    mnemoniccli -r -m mnemonic_str -s seed -e entropy -ll debug &>out
-   if [[ $? != 0 && $? != 65 ]] ; then handle_fail ; cp mnemonic_str "fail-${fails}" ; fi
+   if [[ $? != 0 && $? != 65 && $? != 2 ]] ; then handle_fail ; cp mnemonic_str "fail-${fails}" ; fi
    mnemoniccli -v -m mnemonic_str -s seed_hex -ll debug &>out
-   if [[ $? != 0 && $? != 65 && $? != 125 ]] ; then handle_fail ; cp mnemonic_str "fail-${fails}" ; cp seed_hex "fail-${fails}" ; fi
+   if [[ $? != 0 && $? != 65 && $? != 125 && $? != 2 ]] ; then handle_fail ; cp mnemonic_str "fail-${fails}" ; cp seed_hex "fail-${fails}" ; fi
    mnemoniccli -v -m mnemonic_str -s seed_bin -f bin -ll debug &>out
-   if [[ $? != 0 && $? != 65 && $? != 125 ]] ; then handle_fail ; cp mnemonic_str "fail-${fails}" ; cp seed_bin "fail-${fails}" ; fi
+   if [[ $? != 0 && $? != 65 && $? != 125 && $? != 2 ]] ; then handle_fail ; cp mnemonic_str "fail-${fails}" ; cp seed_bin "fail-${fails}" ; fi
 
    password=$(echo "password123" | radamsa)
    mnemoniccli -g -e entropy_hex -s seed -m mnemonic -p "$password" -ll debug &>out
-   if [[ $? != 0 && $? != 65 ]] ; then handle_fail ; cp entropy_hex "fail-${fails}" ; fi
+   if [[ $? != 0 && $? != 65 && $? != 2 ]] ; then handle_fail ; cp entropy_hex "fail-${fails}" ; fi
    mnemoniccli -g -e entropy_bin -s seed -m mnemonic -p "$password" -f bin -ll debug &>out
-   if [[ $? != 0 && $? != 65 ]] ; then handle_fail ; cp entropy_bin "fail-${fails}" ; fi
+   if [[ $? != 0 && $? != 65 && $? != 2 ]] ; then handle_fail ; cp entropy_bin "fail-${fails}" ; fi
    mnemoniccli -r -m mnemonic_str -s seed -e entropy -p "$password" -ll debug &>out
-   if [[ $? != 0 && $? != 65 ]] ; then handle_fail ; cp mnemonic_str "fail-${fails}" ; fi
+   if [[ $? != 0 && $? != 65 && $? != 2 ]] ; then handle_fail ; cp mnemonic_str "fail-${fails}" ; fi
    mnemoniccli -v -m mnemonic_str -s seed_hex -p "$password" -ll debug &>out
-   if [[ $? != 0 && $? != 65 && $? != 125 ]] ; then handle_fail ; cp mnemonic_str "fail-${fails}" ; cp seed_hex "fail-${fails}" ; fi
+   if [[ $? != 0 && $? != 65 && $? != 125 && $? != 2 ]] ; then handle_fail ; cp mnemonic_str "fail-${fails}" ; cp seed_hex "fail-${fails}" ; fi
    mnemoniccli -v -m mnemonic_str -s seed_bin -p "$password" -f bin -ll debug &>out
-   if [[ $? != 0 && $? != 65 && $? != 125 ]] ; then handle_fail ; cp mnemonic_str "fail-${fails}" ; cp seed_bin "fail-${fails}" ; fi
+   if [[ $? != 0 && $? != 65 && $? != 125 && $? != 2 ]] ; then handle_fail ; cp mnemonic_str "fail-${fails}" ; cp seed_bin "fail-${fails}" ; fi
 
    runs=$((runs + 10))
    echo "Fails: ${fails} / ${runs}"

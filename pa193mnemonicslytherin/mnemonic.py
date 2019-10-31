@@ -84,7 +84,7 @@ class _DictionaryAccess:
         :raises FileNotFoundError: If dictionary file with given `dictionary_name` could not be found.
         :raises PermissionError: If dictionary could not be retrieved due to denied permission.  # TODO test this
         :raises ValueError: on invalid dictionary
-        :raises UnicodeError: If dictionary contains invalid unicode sequences.  # TODO test this
+        :raises UnicodeError: If dictionary contains invalid unicode sequences.
         :rtype: Tuple[List[str], Dict[str, int]]
         :return: List and dictionary of words
         """
@@ -340,10 +340,13 @@ class Mnemonic(str, _DictionaryAccess):
         >>> Mnemonic('hello ' * 12)
         Traceback (most recent call last):
         ValueError: argument `mnemonic` includes checksum 6 different from computed 1
-
+        
         """
         if not isinstance(mnemonic, str):
             raise TypeError('argument `mnemonic` should be str, not {}'.format(type(mnemonic).__name__))
+
+        mnemonic.encode('utf-8')  # to check for valid UTF-8
+        mnemonic = normalize('NFKD', mnemonic)
         super().__init__()
         _DictionaryAccess.__init__(self)
 
@@ -413,7 +416,7 @@ class Mnemonic(str, _DictionaryAccess):
         >>> mnemonic.to_seed('a' * 257)
         Traceback (most recent call last):
         ValueError: length of argument `seed_password` should be at most 256, not 257
-
+        
         """
         if not isinstance(seed_password, str):
             raise TypeError('argument `seed_password` should be str, not {}'.format(type(seed_password).__name__))
@@ -422,10 +425,10 @@ class Mnemonic(str, _DictionaryAccess):
             raise ValueError('length of argument `seed_password` should be at most {}, not {}'.format(
                 MAX_SEED_PASSWORD_LENGTH, len(seed_password)))
         # the encoding of both inputs should be UTF-8 NFKD
-        mnemonic = self.encode()  # encoding string into bytes, UTF-8 by default
+        mnemonic = self.encode('utf-8')
         seed_password = normalize('NFKD', seed_password)
         passphrase = "mnemonic" + seed_password
-        passphrase = passphrase.encode()
+        passphrase = passphrase.encode('utf-8')
         return Seed(_pbkdf2_sha512(mnemonic, passphrase, PBKDF2_ROUNDS))
 
     def to_entropy(self) -> Entropy:
@@ -512,6 +515,7 @@ def recover(mnemonic: Mnemonic, seed_password: str = '') -> Tuple[Entropy, Seed]
     :raises ValueError: on invalid parameter value.
         If `seed_password` is longer than 256 characters.
     :raises TypeError: on invalid parameter type
+
     :rtype: Tuple[Entropy, Seed]
     :return: Two item tuple where first is initial entropy and second is seed.
 
