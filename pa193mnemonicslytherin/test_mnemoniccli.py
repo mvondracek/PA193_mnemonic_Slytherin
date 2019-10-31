@@ -69,7 +69,7 @@ def get_invalid_mnemonics() -> List[Tuple[str, Optional[str]]]:
     return invalid_mnemonics
 
 
-def get_non_unicode_mnemonics() -> List[Tuple[bytes, Optional[str]]]:
+def get_invalid_mnemonics_invalid_utf8() -> List[Tuple[bytes, Optional[str]]]:
     """
     :return: non-Unicode mnemonics as byte string, which should be written to file in a binary mode
     """
@@ -386,7 +386,7 @@ class TestMain(unittest.TestCase):
 
     def test_recover_non_unicode_mnemonic(self):
         with TemporaryDirectory() as tmpdir:
-            for mnemonic, stderr in get_non_unicode_mnemonics():
+            for mnemonic, stderr in get_invalid_mnemonics_invalid_utf8():
                 with self.subTest(mnemonic=mnemonic):
                     seed_path = os.path.join(tmpdir, '__seed__')
                     mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
@@ -488,7 +488,7 @@ class TestMain(unittest.TestCase):
         ]
         with TemporaryDirectory() as tmpdir:
             for seed, io_format in valid_seeds:
-                for mnemonic, stderr in get_non_unicode_mnemonics():
+                for mnemonic, stderr in get_invalid_mnemonics_invalid_utf8():
                     with self.subTest(mnemonic=mnemonic, seed=seed, io_format=io_format):
                         seed_path = os.path.join(tmpdir, '__seed__')
                         mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
