@@ -10,6 +10,7 @@
 #
 # 2019
 #
+import os
 import sys
 from unittest import TestCase
 
@@ -31,7 +32,8 @@ class TestMnemonicReference(TestCase):
 
     https://github.com/trezor/python-mnemonic
     """
-    SUBTEST_COUNT = 10
+    _ENV_SUBTEST_COUNT = os.getenv('PA193MNEMONICSLYTHERIN_REFERENCE_SUBTEST_COUNT')
+    SUBTEST_COUNT = 10 if _ENV_SUBTEST_COUNT is None else _ENV_SUBTEST_COUNT
 
     def setUp(self) -> None:
         self.trezor = TrezorMnemonic("english")
