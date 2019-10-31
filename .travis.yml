@@ -1,4 +1,5 @@
 version: ~> 1.0
+os: linux
 language: python
 env:
   - TEST_SUITE='doctest'
