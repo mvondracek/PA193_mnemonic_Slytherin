@@ -104,7 +104,7 @@ def get_invalid_seeds() -> List[Tuple[Union[str, bytes], Config.Format, Optional
     return invalid_seeds
 
 
-def get_invalid_passwords() -> List[Tuple[str, Optional[str]]]:
+def get_invalid_passwords_invalid_utf8() -> List[Tuple[str, Optional[str]]]:
     """
     :return: List of invalid examples as tuples, where first is invalid input,
              and second is optional error message to be checked on
@@ -322,7 +322,7 @@ class TestMain(unittest.TestCase):
     def test_generate_invalid_password(self):
         entropy = TREZOR_TEST_VECTORS['english'][0][0]
         with TemporaryDirectory() as tmpdir:
-            for password, stderr in get_invalid_passwords():
+            for password, stderr in get_invalid_passwords_invalid_utf8():
                 with self.subTest(password=password):
                     seed_path = os.path.join(tmpdir, '__seed__')
                     mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
@@ -403,7 +403,7 @@ class TestMain(unittest.TestCase):
     def test_recover_non_unicode_password(self):
         mnemonic = TREZOR_TEST_VECTORS['english'][0][1]
         with TemporaryDirectory() as tmpdir:
-            for password, stderr in get_invalid_passwords():
+            for password, stderr in get_invalid_passwords_invalid_utf8():
                 with self.subTest(password=password):
                     seed_path = os.path.join(tmpdir, '__seed__')
                     mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
@@ -543,7 +543,7 @@ class TestMain(unittest.TestCase):
         ]
         with TemporaryDirectory() as tmpdir:
             for seed, io_format in valid_seeds:
-                for password, stderr in get_invalid_passwords():
+                for password, stderr in get_invalid_passwords_invalid_utf8():
                     with self.subTest(seed=seed, io_format=io_format, password=password):
                         seed_path = os.path.join(tmpdir, '__seed__')
                         mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
