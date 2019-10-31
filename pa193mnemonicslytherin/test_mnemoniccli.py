@@ -463,7 +463,7 @@ class TestMain(unittest.TestCase):
                                         stdout_check='',
                                         stderr_check=stderr)
 
-    def test_verify_non_unicode_seed(self):
+    def test_verify_invalid_seed_invalid_utf8(self):
         seed = b'\xff' * SEED_LEN
         with TemporaryDirectory() as tmpdir:
             seed_path = os.path.join(tmpdir, '__seed__')
