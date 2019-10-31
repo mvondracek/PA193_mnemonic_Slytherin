@@ -1,5 +1,7 @@
 #!/bin/bash
 
+TEST_COUNT="${PA193MNEMONICSLYTHERIN_FUZZ_TEST_COUNT:-1}"
+
 handle_fail()
 {
   let "fails++"; mkdir "fail-${fails}" ; sed -i "1iFailed instance number ${fails}, with password '${password}'" out ; cat out ; cat out >> fails ; mv out "fail-${fails}" ;
@@ -8,7 +10,7 @@ handle_fail()
 fails=0
 runs=0
 echo -n "" > fails
-while true
+while [[ runs -ne TEST_COUNT ]]
  do
    password=""
    radamsa test_mnemonic_str > mnemonic_str
@@ -43,4 +45,4 @@ while true
    runs=$((runs + 10))
    echo "Fails: ${fails} / ${runs}"
 done
-
+exit "$fails"
