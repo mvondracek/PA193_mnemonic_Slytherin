@@ -12,9 +12,21 @@ install:
   - pip install .
   - ./test-reference/install.sh
 script:
-  - "if [[ ${TEST_SUITE} == 'unit' ]]; then python -m unittest pa193mnemonicslytherin/test_mnemonic.py ; fi"
-  - "if [[ ${TEST_SUITE} == 'integration' ]]; then python -m unittest pa193mnemonicslytherin/test_mnemoniccli.py ; fi"
-  - "if [[ ${TEST_SUITE} == 'reference' ]]; then python -m unittest discover -s ./test-reference ; fi"
+  - |
+    case ${TEST_SUITE} in
+    'unit')
+      python -m unittest pa193mnemonicslytherin/test_mnemonic.py ;
+    ;;
+    'integration')
+      python -m unittest pa193mnemonicslytherin/test_mnemoniccli.py ;
+    ;;
+    'reference')
+      python -m unittest discover -s ./test-reference ;
+    ;;
+    *)
+      echo "Error: unknown TEST_SUITE in Travis CI config" 1>&2 ; false ;
+    ;;
+    esac
 after_success:
   - coverage run --source=pa193mnemonicslytherin setup.py test
   - coveralls
