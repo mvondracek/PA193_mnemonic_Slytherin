@@ -21,7 +21,7 @@ from typing import Optional, List, Tuple, Union
 from pa193mnemonicslytherin.mnemonic import MAX_SEED_PASSWORD_LENGTH, SEED_LEN
 from pa193mnemonicslytherin.mnemoniccli import ExitCode, cli_entry_point, Config
 from pa193mnemonicslytherin.test_mnemonic import TREZOR_TEST_VECTORS, TREZOR_PASSWORD, \
-    VALID_SEED_HEX_TREZOR, VALID_MNEMONIC_PHRASE_TREZOR
+    VALID_SEED_HEX_TREZOR, VALID_MNEMONIC_PHRASE_TREZOR, INVALID_PASSWORD_INVALID_UTF8
 
 
 def get_invalid_entropies() -> List[Tuple[Union[str, bytes], Config.Format, Optional[str]]]:
@@ -102,17 +102,6 @@ def get_invalid_seeds() -> List[Tuple[Union[str, bytes], Config.Format, Optional
     invalid_seeds.extend([(seed_non_ascii, Config.Format.TEXT_HEXADECIMAL, None),
                           (seed_non_hex, Config.Format.TEXT_HEXADECIMAL, None)])
     return invalid_seeds
-
-
-def get_invalid_passwords_invalid_utf8() -> List[Tuple[str, Optional[str]]]:
-    """
-    :return: List of invalid examples as tuples, where first is invalid input,
-             and second is optional error message to be checked on
-             program's stderr.
-    """
-    # noinspection SpellCheckingInspection
-    invalid_passwords = [("icpa\u202e\U000e0ec1\udcaassword1", None)]
-    return invalid_passwords
 
 
 class TestMain(unittest.TestCase):
@@ -200,6 +189,7 @@ class TestMain(unittest.TestCase):
         self.assert_program_error([self.SCRIPT, '-s'], ExitCode.ARGUMENTS)
         self.assert_program_error([self.SCRIPT, '-p'], ExitCode.ARGUMENTS)
         self.assert_program_error([self.SCRIPT, '-p', 'a' * (MAX_SEED_PASSWORD_LENGTH + 1)], ExitCode.ARGUMENTS)
+        self.assert_program_error([self.SCRIPT, '-p', INVALID_PASSWORD_INVALID_UTF8], ExitCode.ARGUMENTS)
         self.assert_program_error([self.SCRIPT, '-v', '-m'], ExitCode.ARGUMENTS)
         self.assert_program_error([self.SCRIPT, '-v', '-s'], ExitCode.ARGUMENTS)
         self.assert_program_error([self.SCRIPT, '-g', '-r', '-v'], ExitCode.ARGUMENTS)
@@ -318,26 +308,6 @@ class TestMain(unittest.TestCase):
                                 stdout_check='',
                                 stderr_check=None)
 
-    def test_generate_invalid_password(self):
-        entropy = TREZOR_TEST_VECTORS['english'][0][0]
-        with TemporaryDirectory() as tmpdir:
-            for password, stderr in get_invalid_passwords_invalid_utf8():
-                with self.subTest(password=password):
-                    seed_path = os.path.join(tmpdir, '__seed__')
-                    mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
-                    entropy_path = os.path.join(tmpdir, '__entropy__')
-                    with open(entropy_path, 'w') as entropy_file:
-                        entropy_file.write(entropy)
-                    self.assert_program([self.SCRIPT, '-g',
-                                         '-e', entropy_path,
-                                         '-m', mnemonic_path,
-                                         '-s', seed_path,
-                                         '--format', Config.Format.TEXT_HEXADECIMAL.value,
-                                         '-p', password],
-                                        ExitCode.EX_DATAERR,
-                                        stdout_check='',
-                                        stderr_check=stderr)
-
     def test_recover(self):
         with TemporaryDirectory() as tmpdir:
             for test_vector in TREZOR_TEST_VECTORS['english']:
@@ -395,25 +365,6 @@ class TestMain(unittest.TestCase):
                                          '-e', entropy_path,
                                          '-m', mnemonic_path,
                                          '-s', seed_path],
-                                        ExitCode.EX_DATAERR,
-                                        stdout_check='',
-                                        stderr_check=stderr)
-
-    def test_recover_non_unicode_password(self):
-        mnemonic = TREZOR_TEST_VECTORS['english'][0][1]
-        with TemporaryDirectory() as tmpdir:
-            for password, stderr in get_invalid_passwords_invalid_utf8():
-                with self.subTest(password=password):
-                    seed_path = os.path.join(tmpdir, '__seed__')
-                    mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
-                    entropy_path = os.path.join(tmpdir, '__entropy__')
-                    with open(mnemonic_path, 'w') as mnemonic_file:
-                        mnemonic_file.write(mnemonic)
-                    self.assert_program([self.SCRIPT, '-r',
-                                         '-e', entropy_path,
-                                         '-m', mnemonic_path,
-                                         '-s', seed_path,
-                                         '-p', password],
                                         ExitCode.EX_DATAERR,
                                         stdout_check='',
                                         stderr_check=stderr)
@@ -534,28 +485,6 @@ class TestMain(unittest.TestCase):
                                  '-s', seed_path], ExitCode.EX_DATAERR,
                                 stdout_check='',
                                 stderr_check=None)
-
-    def test_verify_non_unicode_password(self):
-        valid_seeds = [
-            (unhexlify(VALID_SEED_HEX_TREZOR), Config.Format.BINARY),
-            (VALID_SEED_HEX_TREZOR, Config.Format.TEXT_HEXADECIMAL),
-        ]
-        with TemporaryDirectory() as tmpdir:
-            for seed, io_format in valid_seeds:
-                for password, stderr in get_invalid_passwords_invalid_utf8():
-                    with self.subTest(seed=seed, io_format=io_format, password=password):
-                        seed_path = os.path.join(tmpdir, '__seed__')
-                        mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
-                        with open(mnemonic_path, 'w') as mnemonic_file:
-                            mnemonic_file.write(VALID_MNEMONIC_PHRASE_TREZOR)
-                        with open(seed_path, io_format.write_mode) as seed_file:
-                            seed_file.write(seed)
-                        self.assert_program([self.SCRIPT, '-v', '--format', io_format.value,
-                                             '-m', mnemonic_path,
-                                             '-s', seed_path,
-                                             '-p', password], ExitCode.EX_DATAERR,
-                                            stdout_check='',
-                                            stderr_check=stderr)
 
     def test_verify_missing_seed_file(self):
         with TemporaryDirectory() as tmpdir:

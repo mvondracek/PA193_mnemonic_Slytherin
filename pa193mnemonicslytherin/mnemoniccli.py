@@ -19,6 +19,7 @@ from binascii import unhexlify, hexlify, Error
 from enum import Enum, unique
 from pprint import saferepr
 from typing import Sequence
+from unicodedata import normalize
 
 from pa193mnemonicslytherin import Entropy, Mnemonic, Seed
 from pa193mnemonicslytherin import generate, recover, verify
@@ -122,6 +123,12 @@ class Config(object):
             if len(password) > MAX_SEED_PASSWORD_LENGTH:
                 raise argparse.ArgumentTypeError("password is longer than {} characters".format(
                     MAX_SEED_PASSWORD_LENGTH))
+            try:
+                # to raise UnicodeError for invalid UTF-8
+                password.encode('utf-8')
+                password = normalize('NFKD', password)
+            except UnicodeError as e:
+                raise argparse.ArgumentTypeError("password is not valid UTF-8: {}".format(e)) from e
             return password
         parser = argparse.ArgumentParser(
             prog=cls.PROGRAM_NAME,
@@ -158,7 +165,7 @@ class Config(object):
                             help='select input and output format (default: %(default)s)'
                             )
         parser.add_argument('-p', '--password',
-                            help='password for protection of seed',
+                            help='password for protection of seed (UTF-8)',
                             default='',
                             type=valid_password
                             )
@@ -263,12 +270,7 @@ def action_generate(config: Config) -> ExitCode:
         logger.critical(str(e))
         print(str(e), file=sys.stderr)
         return ExitCode.EX_DATAERR
-    try:
         mnemonic, seed = generate(entropy, config.password)
-    except UnicodeError as e:
-        logger.critical(str(e))
-        print(str(e), file=sys.stderr)
-        return ExitCode.EX_DATAERR
     with open(config.mnemonic_filepath, 'w') as file:
         file.write(mnemonic)
     logger.info('Mnemonic written to {}.'.format(config.mnemonic_filepath))
@@ -300,12 +302,7 @@ def action_recover(config: Config) -> ExitCode:
         logger.critical(str(e))
         print(str(e), file=sys.stderr)
         return ExitCode.EX_DATAERR
-    try:
         entropy, seed = recover(mnemonic, config.password)
-    except UnicodeError as e:
-        logger.critical(str(e))
-        print(str(e), file=sys.stderr)
-        return ExitCode.EX_DATAERR
     with open(config.entropy_filepath, config.format.write_mode) as file:
         if config.format is Config.Format.TEXT_HEXADECIMAL:
             entropy = str(hexlify(entropy), 'ascii')
@@ -364,12 +361,7 @@ def action_verify(config: Config) -> ExitCode:
         logger.critical(str(e))
         print(str(e), file=sys.stderr)
         return ExitCode.EX_DATAERR
-    try:
         match = verify(mnemonic, seed, config.password)
-    except UnicodeError as e:
-        logger.critical(str(e))
-        print(str(e), file=sys.stderr)
-        return ExitCode.EX_DATAERR
     if not match:
         msg = 'Seeds do not match.'
         logger.info(msg)
