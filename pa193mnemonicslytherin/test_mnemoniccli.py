@@ -206,6 +206,10 @@ class TestMain(TestMainBase):
                                        '-e', non_existing_filepath,
                                        '-m', non_existing_filepath,
                                        '-s', non_existing_filepath], ExitCode.EX_NOINPUT)
+            self.assert_program_error([self.SCRIPT, '-ll', 'debug', '-g',
+                                       '-e', non_existing_filepath,
+                                       '-m', non_existing_filepath,
+                                       '-s', non_existing_filepath], ExitCode.EX_NOINPUT)
             self.assert_program_error([self.SCRIPT, '-r',
                                        '-e', non_existing_filepath,
                                        '-m', non_existing_filepath,
