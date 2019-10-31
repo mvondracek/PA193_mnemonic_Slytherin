@@ -288,11 +288,8 @@ class TestMain(unittest.TestCase):
                                         stdout_check='',
                                         stderr_check=stderr)
 
-    @unittest.skip("cannot generate non-UTF-8 entropy file")
     def test_generate_non_unicode_entropy(self):
         entropy = b'\x86' * 16
-        # currently not working: exception occurs after hexlify
-        # it should occur just after reading attempt
         with TemporaryDirectory() as tmpdir:
             seed_path = os.path.join(tmpdir, '__seed__')
             mnemonic_path = os.path.join(tmpdir, '__mnemonic__')
@@ -467,10 +464,7 @@ class TestMain(unittest.TestCase):
                                         stdout_check='',
                                         stderr_check=stderr)
 
-    @unittest.skip("cannot generate non-UTF-8 seed file")
     def test_verify_non_unicode_seed(self):
-        # currently not working: exception occurs after hexlify
-        # it should occur just after reading attempt
         seed = b'\xff' * SEED_LEN
         with TemporaryDirectory() as tmpdir:
             seed_path = os.path.join(tmpdir, '__seed__')

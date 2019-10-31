@@ -80,6 +80,10 @@ class Config(object):
         def write_mode(self):
             return 'wb' if self is Config.Format.BINARY else 'w'
 
+        @property
+        def encoding(self):
+            return 'utf-8' if self is Config.Format.TEXT_HEXADECIMAL else None
+
     PROGRAM_NAME = 'mnemoniccli'
     PROGRAM_DESCRIPTION = 'BIP39 Mnemonic Phrase Generator and Verifier'
     LOGGING_LEVELS_DICT = {'debug': logging.DEBUG,
@@ -247,7 +251,7 @@ def cli_entry_point(argv=sys.argv):
 def action_generate(config: Config) -> ExitCode:
     # TODO Check file size before reading?
     try:
-        with open(config.entropy_filepath, config.format.read_mode) as file:
+        with open(config.entropy_filepath, config.format.read_mode, encoding=config.format.encoding) as file:
             entropy = file.read()  # type: typing.Union[bytes, str]
     except FileNotFoundError as e:
         logger.critical(str(e))
@@ -271,10 +275,10 @@ def action_generate(config: Config) -> ExitCode:
         print(str(e), file=sys.stderr)
         return ExitCode.EX_DATAERR
         mnemonic, seed = generate(entropy, config.password)
-    with open(config.mnemonic_filepath, 'w') as file:
+    with open(config.mnemonic_filepath, 'w', encoding='utf-8') as file:
         file.write(mnemonic)
     logger.info('Mnemonic written to {}.'.format(config.mnemonic_filepath))
-    with open(config.seed_filepath, config.format.write_mode) as file:
+    with open(config.seed_filepath, config.format.write_mode, encoding=config.format.encoding) as file:
         if config.format is Config.Format.TEXT_HEXADECIMAL:
             seed = str(hexlify(seed), 'ascii')
         file.write(seed)
@@ -303,12 +307,12 @@ def action_recover(config: Config) -> ExitCode:
         print(str(e), file=sys.stderr)
         return ExitCode.EX_DATAERR
         entropy, seed = recover(mnemonic, config.password)
-    with open(config.entropy_filepath, config.format.write_mode) as file:
+    with open(config.entropy_filepath, config.format.write_mode, encoding=config.format.encoding) as file:
         if config.format is Config.Format.TEXT_HEXADECIMAL:
             entropy = str(hexlify(entropy), 'ascii')
         file.write(entropy)
     logger.info('Entropy written to {}.'.format(config.entropy_filepath))
-    with open(config.seed_filepath, config.format.write_mode) as file:
+    with open(config.seed_filepath, config.format.write_mode, encoding=config.format.encoding) as file:
         if config.format is Config.Format.TEXT_HEXADECIMAL:
             seed = str(hexlify(seed), 'ascii')
         file.write(seed)
@@ -338,7 +342,7 @@ def action_verify(config: Config) -> ExitCode:
         return ExitCode.EX_DATAERR
     # TODO Check file size before reading?
     try:
-        with open(config.seed_filepath, config.format.read_mode) as file:
+        with open(config.seed_filepath, config.format.read_mode, encoding=config.format.encoding) as file:
             seed = file.read()  # type: typing.Union[bytes, str]
     except FileNotFoundError as e:
         logger.critical(str(e))
