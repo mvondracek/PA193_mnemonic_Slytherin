@@ -282,7 +282,7 @@ def action_generate(config: Config) -> ExitCode:
         except (Error, ValueError) as e:
             raise InputDataError(str(e)) from e
     try:
-        entropy = Entropy(entropy)
+        entropy = Entropy(entropy)  # type: Entropy
     except ValueError as e:
         raise InputDataError(str(e)) from e
     mnemonic, seed = generate(entropy, config.password)
@@ -311,7 +311,7 @@ def action_recover(config: Config) -> ExitCode:
     except UnicodeError as e:
         raise InputDataError(str(e)) from e
     try:
-        mnemonic = Mnemonic(mnemonic)
+        mnemonic = Mnemonic(mnemonic)  # type: Mnemonic
     except ValueError as e:
         raise InputDataError(str(e)) from e
     entropy, seed = recover(mnemonic, config.password)
@@ -342,7 +342,7 @@ def action_verify(config: Config) -> ExitCode:
     except UnicodeError as e:
         raise InputDataError(str(e)) from e
     try:
-        mnemonic = Mnemonic(mnemonic)
+        mnemonic = Mnemonic(mnemonic)  # type: Mnemonic
     except ValueError as e:
         raise InputDataError(str(e)) from e
     try:
@@ -358,7 +358,7 @@ def action_verify(config: Config) -> ExitCode:
         except (Error, ValueError) as e:
             raise InputDataError(str(e)) from e
     try:
-        seed = Seed(seed)
+        seed = Seed(seed)  # type: Seed
     except ValueError as e:
         raise InputDataError(str(e)) from e
     match = verify(mnemonic, seed, config.password)
