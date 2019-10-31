@@ -29,5 +29,5 @@ script:
     ;;
     esac
 after_success:
-  - coverage run --source=pa193mnemonicslytherin python -m unittest
+  - coverage run --source=pa193mnemonicslytherin setup.py test
   - coveralls
