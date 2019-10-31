@@ -52,9 +52,9 @@ def get_invalid_entropies() -> List[Tuple[Union[str, bytes], Config.Format, Opti
     entropy_non_ascii = "1122334455667ЫЫ899ЩЩBBCCDDEEFF00"
     entropy_non_hex = "Z" * 16
     invalid_entropies.extend([(entropy_non_ascii,
-                              Config.Format.TEXT_HEXADECIMAL, None),
+                               Config.Format.TEXT_HEXADECIMAL, None),
                               (entropy_non_hex,
-                              Config.Format.TEXT_HEXADECIMAL, None)])
+                               Config.Format.TEXT_HEXADECIMAL, None)])
     return invalid_entropies
 
 
