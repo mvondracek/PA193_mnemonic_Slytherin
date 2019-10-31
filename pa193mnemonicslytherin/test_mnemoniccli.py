@@ -123,14 +123,14 @@ class TestMain(unittest.TestCase):
         :param stderr_check: String with which `stderr` should be compared, `None` if `stderr` should not be empty.
         """
         cli = self.execute_cli(args)
-        if stdout_check is not None:
-            self.assertEqual(stdout_check, cli.stdout)
-        else:
-            self.assertNotEqual('', cli.stdout)
         if stderr_check is not None:
             self.assertEqual(stderr_check, cli.stderr)
         else:
             self.assertNotEqual('', cli.stderr)
+        if stdout_check is not None:
+            self.assertEqual(stdout_check, cli.stdout)
+        else:
+            self.assertNotEqual('', cli.stdout)
         self.assertEqual(exitcode.value, cli.returncode)
 
     def assert_program_entry_point(self, args: List[str], exitcode: ExitCode,
