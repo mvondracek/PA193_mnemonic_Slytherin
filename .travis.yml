@@ -5,9 +5,9 @@ python:
   - "3.6"
   - "3.7"
 env:
-  - TEST_SUITE="unit"
-  - TEST_SUITE="integration"
-  - TEST_SUITE="reference"
+  - TEST_SUITE='unit'
+  - TEST_SUITE='integration'
+  - TEST_SUITE='reference'
 install:
   - pip install coveralls
   - pip install .
@@ -15,13 +15,13 @@ install:
 script:
   - |
     case ${TEST_SUITE} in
-    'unit')
+    unit)
       python -m unittest pa193mnemonicslytherin/test_mnemonic.py ;
     ;;
-    'integration')
+    integration)
       python -m unittest pa193mnemonicslytherin/test_mnemoniccli.py ;
     ;;
-    'reference')
+    reference)
       python -m unittest discover -s ./test-reference ;
     ;;
     *)
