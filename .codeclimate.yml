@@ -16,7 +16,7 @@ plugins:
     enabled: true
     config:
       tests_patterns:
-        - **/test_*
+        - "**/test_*"
       # Possible values are: info, minor, major (default), critical, blocker
       minimum_severity: major
 exclude_patterns:
