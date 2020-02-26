@@ -19,3 +19,5 @@ plugins:
         - pa193mnemonicslytherin/test_*
       # Possible values are: info, minor, major (default), critical, blocker
       minimum_severity: major
+exclude_patterns:
+  - "pa193mnemonicslytherin/test_*"
